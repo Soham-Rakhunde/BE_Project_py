@@ -1,1 +1,5 @@
 /be_pro_impl.code-workspace
+/.conda
+/tempCodeRunnerFile.py
+*.pyc
+*.pyo
