@@ -16,15 +16,15 @@ class KeyHandler(metaclass=SingletonMeta):
     def __init__(self):
         if os.path.exists(self.path):
             self.retrieve()
-            print("key retrieved", self.path)
+            # print("key retrieved:", self.path)
         else:
             self.generate(password="passsasedw")
             self.save()
 
     def generate(self, password: str):
-        salt = get_random_bytes(64) 
-        self.key = PBKDF2(password.encode("utf8"), salt, 32, count=1000000, hmac_hash_module=SHA512)
-        print("Derived key:", binascii.hexlify(self.key))
+        self.salt = get_random_bytes(64) 
+        self.key = PBKDF2(password.encode("utf8"), self.salt, 32, count=1000000, hmac_hash_module=SHA512)
+        # print("Derived key:", binascii.hexlify(self.key))
 
     def save(self):
         with open(self.path, 'wb') as file:

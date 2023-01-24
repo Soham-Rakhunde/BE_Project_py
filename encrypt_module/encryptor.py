@@ -1,27 +1,23 @@
 import binascii
 from Crypto.Cipher import AES
-from Crypto.Random import get_random_bytes
+from data_module.data_handler import DataHandler
+# from Crypto.Random import get_random_bytes
 from key_handling_module.key_handler import KeyHandler
 
 class EncryptionService:
 
-    # def __init__(self, key):
-    #     
-
     @staticmethod
-    def encrypt(inp: bytes):
+    def encrypt(_dataHandler: DataHandler):
         keyService = KeyHandler()
         aes = AES.new(keyService.key, AES.MODE_EAX)
-        ciphertext, tag = aes.encrypt_and_digest(inp)
-        encryptedList = [x for x in (aes.nonce, tag, ciphertext) ]
-        print("cipher:", binascii.hexlify(ciphertext))
-        print(encryptedList)
-        return encryptedList
+
+        _dataHandler.AESNonce = aes.nonce
+        _dataHandler.cipher, _dataHandler.MACtag = aes.encrypt_and_digest(_dataHandler.data)
 
     @staticmethod
-    def decrypt(encryptedList: bytes) -> bytes:
-        (nonce, tag, ciphertext) = encryptedList
+    def decrypt(_dataHandler: DataHandler) -> bytes:
         keyService = KeyHandler()
-        aes = AES.new(keyService.key, AES.MODE_EAX, nonce)
-        data = aes.decrypt_and_verify(ciphertext, tag)
-        print (data.decode("utf-8"))
+        aes = AES.new(keyService.key, AES.MODE_EAX, _dataHandler.AESNonce)
+
+        _dataHandler.data = aes.decrypt_and_verify(_dataHandler.cipher, _dataHandler.MACtag)
+        # print (data.decode("utf-8"))
