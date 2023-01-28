@@ -1,5 +1,5 @@
 
-from data_module.data_handler import DataHandler
+from services.data_handler_module import DataHandler
 ''' Instead of Partioner '''
 class Partitioner:
 

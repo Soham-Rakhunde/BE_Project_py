@@ -50,7 +50,7 @@ class DataHandler:
         return buffer
         
     # def decode(self):
-
+    # TODO decode and unpad and save in the object members
 
     def write_file(self, save_path = 'C:\\Users\\soham\\OneDrive\\Desktop\\3433.jpg'):
         # TODO ask for file path

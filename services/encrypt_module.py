@@ -1,8 +1,8 @@
 import binascii
 from Crypto.Cipher import AES
-from data_module.data_handler import DataHandler
+from services.data_handler_module import DataHandler
 # from Crypto.Random import get_random_bytes
-from key_handling_module.key_handler import KeyHandler
+from services.key_handling_module import KeyHandler
 
 class EncryptionService:
 

@@ -1,5 +1,5 @@
 import binascii, os
-from singleton_meta import SingletonMeta
+from utils.singleton_meta import SingletonMeta
 from Crypto.Protocol.KDF import PBKDF2
 from Crypto.Hash import SHA512
 from Crypto.Random import get_random_bytes
