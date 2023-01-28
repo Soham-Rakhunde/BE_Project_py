@@ -20,4 +20,4 @@ class EncryptionService:
         aes = AES.new(keyService.key, AES.MODE_EAX, _dataHandler.AESNonce)
 
         _dataHandler.data = aes.decrypt_and_verify(_dataHandler.cipher, _dataHandler.MACtag)
-        # print (data.decode("utf-8"))
+        # print (_dataHandler.data)

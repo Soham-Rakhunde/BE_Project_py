@@ -8,5 +8,5 @@ if __name__ == "__main__":
     _dataHandler = DataHandler('C:\\Users\\soham\\OneDrive\\Pictures\\Wallpapers\\3433.jpg')
     EncryptionService.encrypt(_dataHandler)
     Partitioner.partition(_dataHandler)
-    # EncryptionService.decrypt(_dataHandler)
+    EncryptionService.decrypt(_dataHandler)
     # _dataHandler.write_file()
