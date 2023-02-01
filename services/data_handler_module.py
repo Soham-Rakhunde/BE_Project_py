@@ -1,4 +1,5 @@
 import os, io
+from utils.constants import *
 
 class DataHandler:
     file_path: str = None
@@ -26,8 +27,6 @@ class DataHandler:
         -> 16 bytes of MACTag
     '''
     def encode_and_pad(self) -> io.BufferedIOBase: 
-        
-        CHUNK_SIZE = 512 * 1024 # 512 KB
         PAD_SIZE = CHUNK_SIZE - (len(self.cipher) + 16 + 16 + 3) % CHUNK_SIZE
         if PAD_SIZE == CHUNK_SIZE:
             PAD_SIZE = 0

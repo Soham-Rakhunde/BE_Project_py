@@ -1,5 +1,6 @@
 import io
 from services.data_handler_module import DataHandler
+from utils.constants import *
 
 
 ''' Instead of Partioner '''
@@ -7,8 +8,6 @@ class Partitioner:
 
     @staticmethod
     def partition(_dataHandler: DataHandler) -> io.BufferedIOBase:
-        CHUNK_SIZE = 512 * 1024 # 512 KB
-        
         bufferObj = _dataHandler.encode_and_pad()
         del _dataHandler
 

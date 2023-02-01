@@ -1,7 +1,7 @@
 from services.encrypt_module import EncryptionService
 from services.data_handler_module import DataHandler
 from services.partitioning_module import Partitioner
-from services.network_handler_module import NetworkHandler
+from services.network_services.p2p_network_handler import P2PNetworkHandler
 import base64
 
 if __name__ == "__main__":
@@ -12,4 +12,4 @@ if __name__ == "__main__":
     # EncryptionService.decrypt(_dataHandler)
     # _dataHandler.write_file()
 
-    tracker = NetworkHandler()
+    tracker = P2PNetworkHandler()

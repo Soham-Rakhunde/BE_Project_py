@@ -1,4 +1,4 @@
-from services.doubleTLS import *
+from services.network_services.doubleTLS import *
 from utils.singleton_meta import SingletonMeta
 
 import datetime         #Datetime for chat output
