@@ -6,34 +6,11 @@ from cryptography.x509.oid import NameOID
 import datetime
 import uuid
 
-one_day = datetime.timedelta(1, 0, 0)
 private_key = rsa.generate_private_key(
     public_exponent=65537,
     key_size=2048,
     backend=default_backend()
 )
-public_key = private_key.public_key()
-builder = x509.CertificateBuilder()
-builder = builder.subject_name(x509.Name([
-    x509.NameAttribute(NameOID.COMMON_NAME, u"localhost"),
-    x509.NameAttribute(NameOID.ORGANIZATION_NAME, u'openstack-ansible'),
-    x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME, u'Default CA Deployment'),
-]))
-builder = builder.issuer_name(x509.Name([
-    x509.NameAttribute(NameOID.COMMON_NAME, u"localhost"),
-]))
-builder = builder.not_valid_before(datetime.datetime.today() - one_day)
-builder = builder.not_valid_after(datetime.datetime(2025, 8, 2))
-builder = builder.serial_number(int(uuid.uuid4()))
-builder = builder.public_key(public_key)
-builder = builder.add_extension(
-    x509.BasicConstraints(ca=True, path_length=None), critical=True,
-)
-certificate = builder.sign(
-    private_key=private_key, algorithm=hashes.SHA256(),
-    backend=default_backend()
-)
-print(isinstance(certificate, x509.Certificate))
 
 with open("ca.pem", "wb") as f:
     f.write(private_key.private_bytes(
@@ -41,6 +18,35 @@ with open("ca.pem", "wb") as f:
         format=serialization.PrivateFormat.TraditionalOpenSSL,
         encryption_algorithm=serialization.BestAvailableEncryption(b"password"),
     ))
+
+one_day = datetime.timedelta(1, 0, 0)
+public_key = private_key.public_key()
+
+subject = issuer = x509.Name([
+    x509.NameAttribute(NameOID.COUNTRY_NAME, u"India"),
+    x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, u"Maharashtra"),
+    x509.NameAttribute(NameOID.LOCALITY_NAME, u"Pune"),
+    x509.NameAttribute(NameOID.ORGANIZATION_NAME, u"localhost"),
+    x509.NameAttribute(NameOID.COMMON_NAME, u"localhost"),
+])
+
+builder = x509.CertificateBuilder()
+builder = builder.subject_name(subject)
+builder = builder.issuer_name(issuer)
+builder = builder.not_valid_before(datetime.datetime.today() - one_day)
+builder = builder.not_valid_after(datetime.datetime(2025, 8, 2))
+builder = builder.serial_number(x509.random_serial_number())
+builder = builder.public_key(public_key)
+builder = builder.add_extension(
+    x509.SubjectAlternativeName([x509.DNSName(u"localhost")]),
+    x509.BasicConstraints(ca=True, path_length=None), 
+    critical=False,
+)
+certificate = builder.sign(
+    private_key=private_key, algorithm=hashes.SHA256(),
+    backend=default_backend()
+)
+print(isinstance(certificate, x509.Certificate))
 
 with open("ca.crt", "wb") as f:
     f.write(certificate.public_bytes(
