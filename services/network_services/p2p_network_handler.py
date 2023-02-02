@@ -1,11 +1,9 @@
 from services.network_services.doubleTLS import *
-from utils.singleton_meta import SingletonMeta
 
-import datetime         #Datetime for chat output
 import threading        #To simultaneously send information with c['localS'], and recieve information with c['remoteS']  
 
 r_text = list()     #used to share incoming messages between the chat listener thread, and the tkinter main loop for the chat (tkinter isn't very compatible with multithreading)
-BufferSize = 1024
+BufferSize = 512
 
 
 class P2PNetworkHandler:
@@ -65,19 +63,3 @@ class P2PNetworkHandler:
             print("Chat partner has disconnected")
         except:
             pass
-        
-    #Gets the current hour/minute for showing as a timestamp in the console
-    def getNow(self):
-        now = datetime.datetime.now()
-        hm = '('
-        if now.hour < 10:
-            hm += f'0{now.hour}:'
-        else:
-            hm += f'{now.hour}:'
-
-        if now.minute < 10:
-            hm += f'0{now.minute}): '
-        else:
-            hm += f'{now.minute}): '
-
-        return hm
