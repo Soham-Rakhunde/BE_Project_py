@@ -35,6 +35,9 @@ class KeyHandler(metaclass=SingletonMeta):
         # self.key = PBKDF2(password.encode("utf8"), self.salt, 32, count=1000000, hmac_hash_module=SHA512)
         # print("Derived key:", binascii.hexlify(self.key))
 
+
+# TODO remove key and ask password everytime to derive the key
+
     def save(self):
         with open(self.path, 'wb') as file:
             file.write(self.key)

@@ -36,7 +36,7 @@ except:
 import threading
 
 #GUI inports
-import tkinter as tk    #Standard python GUI library
+# import tkinter as tk    #Standard python GUI library
 import re               #For user input validations
 
 #For managing the self-signed cert, and incoming public certificates
@@ -48,8 +48,8 @@ import random
 import datetime
 import getpass
 
-#Master function that encompasses the entire process
-def connect(args):
+
+class DuplexTLS:
 
     #Globals used to recieve return values from different threads
     r_key = list()      #used to store the remote public key recieved in passExchangeClient()
@@ -62,13 +62,21 @@ def connect(args):
     passwd_attempts = 4
     BufferSize = 1024
 
+    args = None
+
+    def __init__(self, args):
+        #Run the main function, and return the live sockets to whatever script called it
+        # if not args:
+        #     return self.main()
+        # else:
+        self.args = args
 
     ####################################################################################################################################
     # Key and Certificate generation and usage functions
     ####################################################################################################################################
 
     #Generate key pair
-    def makeKey():
+    def makeKey(self):
         private_key = rsa.generate_private_key(
             public_exponent=65537,
             key_size=2048,
@@ -79,38 +87,38 @@ def connect(args):
 
 
     #Encrypt a message with assymetric public key
-    def encrypt(pub,message):
+    def encrypt(self, pub,message):
         encrypted = pub.encrypt(
             message,
             padding.OAEP(
-                mgf=padding.MGF1(algorithm=hashingAlgorithm),
-                algorithm=hashingAlgorithm,
+                mgf=padding.MGF1(algorithm=self.hashingAlgorithm),
+                algorithm=self.hashingAlgorithm,
                 label=None
             )
         )
         return encrypted
 
     #Decrypt a message with assymetric private key
-    def decrypt(priv,message):
+    def decrypt(self, priv,message):
         decrypted = priv.decrypt(
             message,
             padding.OAEP(
-                mgf=padding.MGF1(algorithm=hashingAlgorithm),
-                algorithm=hashingAlgorithm,
+                mgf=padding.MGF1(algorithm=self.hashingAlgorithm),
+                algorithm=self.hashingAlgorithm,
                 label=None
             )
         )
         return decrypted
 
     #Encoding public key as bytestring
-    def pubString(pub):
+    def pubString(self, pub):
         pem = pub.public_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PublicFormat.SubjectPublicKeyInfo
         )
         return pem
     #Unpacking a bytestring public key into a key object
-    def readPub(pubString):
+    def readPub(self, pubString):
         public_key = serialization.load_pem_public_key(
             pubString,
             backend=default_backend()
@@ -118,7 +126,8 @@ def connect(args):
         return public_key
 
     #Writing encrypted private key to file (for use with the certificate)
-    def writeKey(priv,passwd):
+    def writeKey(self, priv,passwd):
+        # TODO: Ask for password everytime 
         priv = priv.private_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PrivateFormat.TraditionalOpenSSL,
@@ -128,18 +137,18 @@ def connect(args):
             f.write(priv)
 
     #Generating a self-signed certificate with an existing private key
-    def makeCert():
+    def makeCert(self):
         if not os.path.isfile('Identity/certificate.pem'):
             #Generate private key
-            key = makeKey()['private']
+            key = self.makeKey()['private']
             
             #Get password input from user for private key
             password = ''
             while True:
-                if not args:
-                    passInp = passwordPrompt()
+                if not self.args:
+                    passInp = self.passwordPrompt()
                 else:
-                    passInp = passwordPromptNG()
+                    passInp = self.passwordPromptNG()
 
                 if passInp is None:
                     exit()
@@ -178,7 +187,7 @@ def connect(args):
                 fp.write(cert.public_bytes(serialization.Encoding.PEM))
 
             #Write private key to file
-            writeKey(key,password)
+            self.writeKey(key,password)
 
     ####################################################################################################################################
     # Secure connection and Authentication functions    
@@ -187,7 +196,7 @@ def connect(args):
     #serverSocket: Used to listen for the initial inbound connection, and facilitates TLS over the entire transaction
     #remoteSocket: Facilitates the connection to the remote socket that's been connected to
     #c_socket[0] : Acts as a client socket to the remote server that's been connected to
-    def clientServer(keypasswd,hostpassword,remoteaddress,remotepassword,Port,timeout):
+    def clientServer(self, keypasswd,hostpassword,remoteaddress,remotepassword,Port,timeout):
         #Host socket object
         servercontext = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         servercontext.load_cert_chain('Identity/certificate.pem', 'Identity/private_key.pem',password=keypasswd)
@@ -211,20 +220,20 @@ def connect(args):
             while (not ((datetime.datetime.utcnow().timestamp() - x) > timeout)) or not timeout:
                 pass
 
-            if not c_socket:
+            if not self.c_socket:
                 dummysocket = socket.create_connection(('127.0.0.1',Port))
                 clientContext = ssl.SSLContext(ssl.PROTOCOL_TLS)
                 dummySocketS = clientContext.wrap_socket(dummysocket, server_hostname='127.0.0.1')
         
         def exitCatchKP(Port):
             input()
-            if not c_socket:
+            if not self.c_socket:
                 dummysocket = socket.create_connection(('127.0.0.1',Port))
                 clientContext = ssl.SSLContext(ssl.PROTOCOL_TLS)
                 dummySocketS = clientContext.wrap_socket(dummysocket, server_hostname='127.0.0.1')
 
         #Activate client socket function, as well as a function that connects to localhost to fulfill the exit condition
-        listener = threading.Thread(target=establishConnection,args=(remoteaddress,Port), daemon=True)
+        listener = threading.Thread(target=self.establishConnection,args=(remoteaddress,Port), daemon=True)
         listener.start()
 
         quitK = threading.Thread(target=exitCatchKP,args=(Port,), daemon=True)
@@ -256,41 +265,41 @@ def connect(args):
         listener.join()
 
         #Exit if nothing was returned
-        if not c_socket:
+        if not self.c_socket:
             return
 
         print(f"S: Established connection from {address[0]}")
 
         
         #Generate keypair for password exchange
-        key = makeKey()
+        key = self.makeKey()
         print("S: Generated Keypair")
 
         #Hash the passwords before sending them over the wire
-        h = hashes.Hash(passwd_hashingAlgorithm,backend=default_backend())
+        h = hashes.Hash(self.passwd_hashingAlgorithm,backend=default_backend())
         h.update(bytes(hostpassword,'utf8'))
         hostpassword = h.finalize()
-        h = hashes.Hash(passwd_hashingAlgorithm,backend=default_backend())
+        h = hashes.Hash(self.passwd_hashingAlgorithm,backend=default_backend())
         h.update(bytes(remotepassword,'utf8'))
         remotepassword = h.finalize()
 
         #Activate password client function
-        passwordClient = threading.Thread(target=passExchangeClient,args=(remotepassword,), daemon=True)
+        passwordClient = threading.Thread(target=self.passExchangeClient,args=(remotepassword,), daemon=True)
         passwordClient.start()
 
         #Send the other node the public key, then wait for password attempt
-        remoteSocket.send(pubString(key['public']))
+        remoteSocket.send(self.pubString(key['public']))
         print(f"S: Sent public key to {address[0]}")
 
         #If the password matches, send a Granted message. Else send denied
         attempts = 0
-        while attempts < passwd_attempts:
+        while attempts < self.passwd_attempts:
             
-            passAttempt = remoteSocket.recv(BufferSize)
+            passAttempt = remoteSocket.recv(self.BufferSize)
             #This block is in a try-except, in the event that the other person exits on password retry
             try:
                 #If password match, send Granted response and break loop
-                if decrypt(key['private'],passAttempt) == hostpassword:
+                if self.decrypt(key['private'],passAttempt) == hostpassword:
                     remoteSocket.send(bytes("Granted",'utf8'))
                     print(f"S: Password match from {address[0]}")
                     break
@@ -302,7 +311,7 @@ def connect(args):
                 print(f"S: {address[0]} Left during password authentication")
                 return
 
-        if attempts == passwd_attempts:
+        if attempts == self.passwd_attempts:
             print("S: Password attempts exceeded.")
             return
 
@@ -310,32 +319,32 @@ def connect(args):
         passwordClient.join()
 
         #Exit if client authentication failed
-        if not p_auth:
+        if not self.p_auth:
             return
 
         #Symmetric Key Exchange
         #Generate and send it out via the remote public key
         symmkeyLocal = Fernet.generate_key()
-        c_socket[0].send(encrypt(r_key[0],symmkeyLocal))
+        self.c_socket[0].send(self.encrypt(self.r_key[0],symmkeyLocal))
         symmkeyLocal = Fernet(symmkeyLocal)
         print(f"C: Sent symmetric key to {address[0]}")
 
         #Recieve and decode it with local private key
-        symmkeyRemote = remoteSocket.recv(BufferSize)
-        symmkeyRemote = decrypt(key['private'],symmkeyRemote)
+        symmkeyRemote = remoteSocket.recv(self.BufferSize)
+        symmkeyRemote = self.decrypt(key['private'],symmkeyRemote)
         symmkeyRemote = Fernet(symmkeyRemote)
         print(f"S: Recieved symmetric key from {address[0]}")
 
         #With all that information, return the active sockets and keys
         return {
             'localS':remoteSocket,
-            'remoteS':c_socket[0],
+            'remoteS':self.c_socket[0],
             'localK':symmkeyLocal,
             'remoteK':symmkeyRemote
         }
 
     #Function that runs in a separate thread, and connects to a remote server while main simultaneously listens for its own remote connection 
-    def establishConnection(clientaddress,Port):
+    def establishConnection(self, clientaddress,Port):
         #TLS Client context
         clientContext = ssl.SSLContext(ssl.PROTOCOL_TLS)
         #Attempt to connect to a remote address with a regular socket
@@ -385,43 +394,43 @@ def connect(args):
                 print(f'C: ALERT - {raddr} identity has changed\t <-------------------')
 
         #Send the socket up to the main thread, and disable timeout
-        c_socket.append(clientSocket)
-        c_socket[0].settimeout(None)
+        self.c_socket.append(clientSocket)
+        self.c_socket[0].settimeout(None)
 
         return
 
     #Facilitates the client side of the password exchange
-    def passExchangeClient(remotepassword):
+    def passExchangeClient(self, remotepassword):
         #Recieve public key, then send back an encrypted password attempt with it
-        pubkey = c_socket[0].recv(BufferSize)
-        pubkey = readPub(pubkey)
+        pubkey = self.c_socket[0].recv(self.BufferSize)
+        pubkey = self.readPub(pubkey)
         print("C: Recieved public key from remote host")
-        r_key.append(pubkey)
+        self.r_key.append(pubkey)
 
         attempts = 0
-        while attempts < passwd_attempts:
+        while attempts < self.passwd_attempts:
             #Send password attempt
-            c_socket[0].send(encrypt(pubkey,remotepassword))
+            self.c_socket[0].send(self.encrypt(pubkey,remotepassword))
             print("C: Sent password attempt")
 
             #Then wait for a response and act on it
-            response = c_socket[0].recv(BufferSize)
+            response = self.c_socket[0].recv(self.BufferSize)
             if response == b'Granted':
                 print("C: Password accepted by remote host")
-                p_auth.append(1)
+                self.p_auth.append(1)
                 break
             else:
                 print("C: Password rejected by remote host")
                 attempts += 1
-                if attempts < passwd_attempts:
+                if attempts < self.passwd_attempts:
                     #Provide a tkinter input if running gui, or exit the program on wrong attempt
-                    if not args:
-                        remotepassword = passwordWindow()
+                    if not self.args:
+                        remotepassword = self.passwordWindow()
                         if not remotepassword:
-                            c_socket[0].close()
+                            self.c_socket[0].close()
                             return
                     else:
-                        c_socket[0].close()
+                        self.c_socket[0].close()
                         return
                     if remotepassword == None:
                         return
@@ -430,21 +439,21 @@ def connect(args):
     # Input functions
     ####################################################################################################################################
     #Password retry prompt, no GUI edition (Unused because handling keyboard interrupt with multiple threads is terrible lol)
-    def passwordWindowNG():
+    def passwordWindowNG(self):
         while True:
             print('-'*20)
             passwd = input("Please enter another password (blank to exit): ").strip()
             if len(passwd) > 0:
-                h = hashes.Hash(passwd_hashingAlgorithm,backend=default_backend())
+                h = hashes.Hash(self.passwd_hashingAlgorithm,backend=default_backend())
                 h.update(bytes(passwd,'utf8'))
                 passwd = h.finalize()
                 return passwd
             else:
-                c_socket[0].close()
+                self.c_socket[0].close()
                 exit()
 
     #Certificate password entry, no GUI edition
-    def passwordPromptNG():
+    def passwordPromptNG(self):
         while True:
             print("A: Certificate has not yet been generated. Please enter a secure password to use as the unlock key:")
             while True:
@@ -456,7 +465,7 @@ def connect(args):
                     print("A: Passwords don't match. Please try again")
 
     #Password prompt for handling incorrect password attempts as they come in
-    def passwordPrompt():
+    # def passwordPrompt(self):
         root = tk.Tk()
         root.resizable(False,False)
         passwd = list()
@@ -515,7 +524,7 @@ def connect(args):
         else:
             return passwd[0]
 
-    def landingWindow(defaults=False):
+    # def landingWindow(self, defaults=False):
         #Setting up the window
         startupFrame = tk.Tk()
         startupFrame.resizable(False,False)
@@ -611,7 +620,7 @@ def connect(args):
             return None
 
     #Window to get a new password from the user if a wrong one was input
-    def passwordWindow():
+    # def passwordWindow(self):
         #Window parameters
         root = tk.Tk()
         w = 370
@@ -652,7 +661,7 @@ def connect(args):
     ####################################################################################################################################
     # Main Loop    
     ####################################################################################################################################
-    def main(previousOpts=False):
+    # def main(self, previousOpts=False):
         #Reset globals on re-call
         c_socket.clear()
         r_key.clear() 
@@ -708,7 +717,7 @@ def connect(args):
         opts['Port'] = int(opts['Port'])
         return clientServer(opts['keypasswd'],opts['hostpassword'],opts['remoteaddress'],opts['remotepassword'],opts['Port'],timeout=0)
 
-    def mainNG(args):        
+    def connect(self):        
         
         #Create directories to house the host identity, and remote public certs
         if not os.path.isdir('Identity'):
@@ -716,37 +725,31 @@ def connect(args):
         if not os.path.isdir('RemoteCerts'):
             os.mkdir('RemoteCerts')
         #Generate self-signed certificate if it doesn't exist
-        makeCert()
+        self.makeCert()
 
         #Check that the port number is above 1000, and that all other inputs have something there before proceeding
-        if not type(args['port']) == int:
+        if not type(self.args['port']) == int:
             raise Exception("Port number must be an integer value >= 1000")
-        elif args['port'] < 1000:
+        elif self.args['port'] < 1000:
             raise Exception("Port number must be an integer value >= 1000")
-        elif args['keypassword'] == '':
+        elif self.args['keypassword'] == '':
             raise Exception("No certificate key password provided")
-        elif args['hostpassword'] == '':
+        elif self.args['hostpassword'] == '':
             raise Exception("No server-side password value provided")
-        elif args['remotepassword'] == '':
+        elif self.args['remotepassword'] == '':
             raise Exception("No password attempt provided")
-        elif args['remoteaddress'] == '':
+        elif self.args['remoteaddress'] == '':
             raise Exception("No remote address provided")
-        elif not type(args['timeout']) == int:
+        elif not type(self.args['timeout']) == int:
             raise Exception("Timeout variable must be an integer value")
-        elif args['timeout'] < 0:
+        elif self.args['timeout'] < 0:
             raise Exception("Timeout must be a positive value (0 for no timeout)")
         else:
             #Create a context that doesn't go anywhere, just for making sure the key password is correct before proceeding
             try:
                 dummycontext = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-                dummycontext.load_cert_chain('Identity/certificate.pem', 'Identity/private_key.pem',password=args['keypassword'])
+                dummycontext.load_cert_chain('Identity/certificate.pem', 'Identity/private_key.pem',password=self.args['keypassword'])
             except:
                 raise Exception("Incorrect cerificate password provided")
 
-        return clientServer(args['keypassword'],args['hostpassword'],args['remoteaddress'],args['remotepassword'],args['port'],args['timeout'])
-
-    #Run the main function, and return the live sockets to whatever script called it
-    if not args:
-        return main()
-    else:
-        return mainNG(args)
+        return self.clientServer(self.args['keypassword'],self.args['hostpassword'],self.args['remoteaddress'],self.args['remotepassword'],self.args['port'],self.args['timeout'])

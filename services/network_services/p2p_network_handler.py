@@ -1,4 +1,4 @@
-from services.network_services.doubleTLS import *
+from services.network_services.duplexTLS import *
 
 import threading        #To simultaneously send information with c['localS'], and recieve information with c['remoteS']  
 
@@ -10,6 +10,8 @@ class P2PNetworkHandler:
     sendSocket,recieveSocket,symmkeyLocal,symmkeyRemote = [None]*4
 
     def __init__(self) -> None:
+
+        # Make hostpassword as ip+port and same for remote password
         params = {
             'remoteaddress' :'192.168.106.75',       #127.0.0.1 is used as an exit case in the script. So to connect to localhost, be sure to use your PC's LAN IP address
             'port'          : 11111,             #Port for the script to listen/connect on
@@ -19,7 +21,8 @@ class P2PNetworkHandler:
             'timeout'       : 0                 #Connection timeout value as an integer value in seconds. (0 to listen forever)
         }
 
-        s = connect(params)
+        duplexTLS = DuplexTLS(params)
+        s = duplexTLS.connect()
         if s:
             self.sendSocket,self.recieveSocket,self.symmkeyLocal,self.symmkeyRemote = s['localS'],s['remoteS'],s['localK'],s['remoteK']
         
