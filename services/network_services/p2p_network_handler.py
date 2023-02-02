@@ -11,7 +11,7 @@ class P2PNetworkHandler:
 
     def __init__(self) -> None:
 
-        # Make hostpassword as ip+port and same for remote password
+        # TODO Make hostpassword as ip+port and same for remote password
         params = {
             'remoteaddress' :'192.168.106.75',       #127.0.0.1 is used as an exit case in the script. So to connect to localhost, be sure to use your PC's LAN IP address
             'port'          : 11111,             #Port for the script to listen/connect on
@@ -40,11 +40,11 @@ class P2PNetworkHandler:
         self.recieveSocket.close()
 
 
-
     def sendMessage(self):
         msg = input("input:")
         #Send message to remote host
-        self.sendSocket.send(self.symmkeyRemote.encrypt(bytes(msg,'utf-8')))
+        # self.sendSocket.send(self.symmkeyRemote.encrypt(bytes(msg,'utf-8')))
+        self.sendSocket.send(bytes(msg,'utf-8'))
         print("sending: ",msg)
 
     def getMessage(self, msg):
@@ -56,7 +56,7 @@ class P2PNetworkHandler:
             while True:
                 #Recieve message from remote host
                 message = recieveSocket.recv(BufferSize)
-                message = symmkeyLocal.decrypt(message)
+                # message = symmkeyLocal.decrypt(message)
                 message = message.decode('utf8')
 
                 #Write message to console
