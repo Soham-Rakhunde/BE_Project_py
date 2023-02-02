@@ -18,4 +18,4 @@ if __name__ == "__main__":
 
     # print(external_ip)
 
-    # tracker = P2PNetworkHandler()
+    tracker = P2PNetworkHandler()

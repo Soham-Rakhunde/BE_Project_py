@@ -2,10 +2,10 @@ from Crypto.Hash import HMAC, SHA256
 
 from services.key_handling_module import KeyHandler
 
-class Hmac_Module:
+class HMAC_Module:
 
     @staticmethod
-    def generateHMAC(msg: bytes):
+    def generateHMAC(msg: bytes) -> bytes:
         keyHandler = KeyHandler()
 
         h = HMAC.new(keyHandler.key, digestmod=SHA256)
