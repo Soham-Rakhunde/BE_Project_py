@@ -206,6 +206,9 @@ class DuplexTLS:
 
         #Bind the server socket to localhost, and turn off timeout so it can listen forever
         try:
+            # serverSocket.bind(('0.0.0.0', 0))
+            # serverSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            # serverPort = serverSocket.getsockname()[1]
             serverSocket.bind(('0.0.0.0',Port))
         except OSError:
             print("S: Likely port already in use (Linux has a brief timeout between runs)")
@@ -221,6 +224,7 @@ class DuplexTLS:
                 pass
 
             if not self.c_socket:
+                print("Exiting Catch timeout", self.c_socket) 
                 dummysocket = socket.create_connection(('127.0.0.1',Port))
                 clientContext = ssl.SSLContext(ssl.PROTOCOL_TLS)
                 dummySocketS = clientContext.wrap_socket(dummysocket, server_hostname='127.0.0.1')

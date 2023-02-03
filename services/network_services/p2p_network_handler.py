@@ -10,8 +10,11 @@ class P2PNetworkHandler:
     r_text = list()     #used to share incoming messages between the chat listener thread, and the tkinter main loop for the chat (tkinter isn't very compatible with multithreading)
     BufferSize = 512
 
-    def __init__(self, remoteAddr, port) -> None:
-
+    def __init__(self, remoteAddr, port, payload:bytes = None):
+        if port == 11112:
+            # raise Exception()
+        # else:
+            print("port", port)
         # TODO Make hostpassword as ip+port and same for remote password
         params = {
             'remoteaddress' : remoteAddr,       #127.0.0.1 is used as an exit case in the script. So to connect to localhost, be sure to use your PC's LAN IP address
@@ -21,7 +24,6 @@ class P2PNetworkHandler:
             'keypassword'   : 'G00dP@ssw0rd',   #Password to unlock your certificate's private key (on first run, you'll be prompted for this when it's being created)
             'timeout'       : 0                 #Connection timeout value as an integer value in seconds. (0 to listen forever)
         }
-
         duplexTLS = DuplexTLS(params)
         s = duplexTLS.connect()
         if s:
@@ -30,30 +32,39 @@ class P2PNetworkHandler:
         #Start listener function for recieved messages
         listener = threading.Thread(target=self.chatlistener,args=(self.symmkeyLocal,self.recieveSocket,), daemon=True)
         listener.start()
+
+        # self.payload = payload
+        # if self.payload == None:
+        #     self.recieveMode()
+        # else:
+        #     self.sendMode()
+
         #Main loop
-        # rLen = len(self.r_text)
+        rLen = len(self.r_text)
         # while True:
-        #     self.sendMessage()
-        #     if rLen < len(self.r_text):
-        #         rLen = len(self.r_text)
-        #         self.getMessage(self.r_text[-1])
+        self.sendMessage(str(port))
+        if rLen < len(self.r_text):
+            rLen = len(self.r_text)
+            self.getMessage(self.r_text[-1])
 
 
 
     def sendMode(self):
         print("sending payload")
         self.sendSocket.send(self.payload)
-        # self.peerMAC = self.recieveSocket.recv() TODO: receive the loacation and the MAC of the system
+        # self.peerMAC = self.recieveSocket.recv() TODO: receive the loacation
         self.sendSocket.close()
+        self.recieveSocket.close()
 
     def recieveMode(self):
         print("recieving payload")
         self.payload = self.recieveSocket.recv(CHUNK_SIZE)
         # self.sendSocket.send() TODO: send back loaction of the file
         self.recieveSocket.close()
+        self.sendSocket.close()
 
-    def sendMessage(self):
-        msg = input("input:")
+    def sendMessage(self, msg):
+        # msg = input("input:")
         #Send message to remote host
         # self.sendSocket.send(self.symmkeyRemote.encrypt(bytes(msg,'utf-8')))
         self.sendSocket.send(bytes(msg,'utf-8'))

@@ -11,9 +11,9 @@ class Partitioner:
         bufferObj = _dataHandler.encode_and_pad()
         del _dataHandler
         print(CHUNK_SIZE)
-        bufferObj.seek(0)
-        num_of_chunks = bufferObj.getbuffer().nbytes
-        for i in range(0, int(num_of_chunks / CHUNK_SIZE)):
-            print(len(bufferObj.read(CHUNK_SIZE)))
+        # bufferObj.seek(0)
+        # num_of_chunks = bufferObj.getbuffer().nbytes
+        # for i in range(0, int(num_of_chunks / CHUNK_SIZE)):
+        #     print(len(bufferObj.read(CHUNK_SIZE)))
 
         return bufferObj
