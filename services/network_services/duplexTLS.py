@@ -196,7 +196,7 @@ class DuplexTLS:
     #serverSocket: Used to listen for the initial inbound connection, and facilitates TLS over the entire transaction
     #remoteSocket: Facilitates the connection to the remote socket that's been connected to
     #c_socket[0] : Acts as a client socket to the remote server that's been connected to
-    def clientServer(self, keypasswd,hostpassword,remoteaddress,remotepassword,Port,timeout):
+    def clientServer(self, keypasswd,hostpassword,remoteaddress,remotepassword,serverPort,timeout):
         #Host socket object
         servercontext = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         servercontext.load_cert_chain('Identity/certificate.pem', 'Identity/private_key.pem',password=keypasswd)
@@ -209,15 +209,15 @@ class DuplexTLS:
             # serverSocket.bind(('0.0.0.0', 0))
             # serverSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             # serverPort = serverSocket.getsockname()[1]
-            serverSocket.bind(('0.0.0.0',Port))
+            serverSocket.bind(('0.0.0.0',serverPort))
         except OSError:
-            print("S: Likely port already in use (Linux has a brief timeout between runs)")
+            print("S: Likely serverPort already in use (Linux has a brief timeout between runs)")
             return
         serverSocket.settimeout(None)
 
         #The socket accept operation has doesn't seem to have a means of exiting once it's started. So I worked around this by
         #having this function running in a separate thread, which makes a connection to localhost 
-        def exitCatchTM(Port):
+        def exitCatchTM(serverPort):
             #Hold here until timeout criteria is reached, then close the connection
             x = datetime.datetime.utcnow().timestamp()
             while (not ((datetime.datetime.utcnow().timestamp() - x) > timeout)) or not timeout:
@@ -225,27 +225,30 @@ class DuplexTLS:
 
             if not self.c_socket:
                 print("Exiting Catch timeout", self.c_socket) 
-                dummysocket = socket.create_connection(('127.0.0.1',Port))
+                dummysocket = socket.create_connection(('127.0.0.1',serverPort))
                 clientContext = ssl.SSLContext(ssl.PROTOCOL_TLS)
                 dummySocketS = clientContext.wrap_socket(dummysocket, server_hostname='127.0.0.1')
         
-        def exitCatchKP(Port):
+        def exitCatchKP(serverPort):
             input()
+            print("Exiting Catch KP", self.c_socket) 
             if not self.c_socket:
-                dummysocket = socket.create_connection(('127.0.0.1',Port))
+                dummysocket = socket.create_connection(('127.0.0.1',serverPort))
                 clientContext = ssl.SSLContext(ssl.PROTOCOL_TLS)
                 dummySocketS = clientContext.wrap_socket(dummysocket, server_hostname='127.0.0.1')
 
         #Activate client socket function, as well as a function that connects to localhost to fulfill the exit condition
-        listener = threading.Thread(target=self.establishConnection,args=(remoteaddress,Port), daemon=True)
+        #TODO: change ports
+        remotePort = serverPort
+        listener = threading.Thread(target=self.establishConnection,args=(remoteaddress,remotePort), daemon=True)
         listener.start()
 
-        quitK = threading.Thread(target=exitCatchKP,args=(Port,), daemon=True)
+        quitK = threading.Thread(target=exitCatchKP,args=(serverPort,), daemon=True)
         quitK.start()
-        quitT = threading.Thread(target=exitCatchTM,args=(Port,), daemon=True)
+        quitT = threading.Thread(target=exitCatchTM,args=(serverPort,), daemon=True)
         quitT.start()
 
-        print(f"S: Listening on port {Port} (Press Enter to exit)...")
+        print(f"S: Listening on serverPort {serverPort} (Press Enter to exit)...")
 
         #Start listening for connection
         serverSocket.listen(1)
@@ -348,16 +351,16 @@ class DuplexTLS:
         }
 
     #Function that runs in a separate thread, and connects to a remote server while main simultaneously listens for its own remote connection 
-    def establishConnection(self, clientaddress,Port):
+    def establishConnection(self, clientaddress,clientport):
         #TLS Client context
         clientContext = ssl.SSLContext(ssl.PROTOCOL_TLS)
         #Attempt to connect to a remote address with a regular socket
-        print(f"C: Attempting connection to {clientaddress} port {Port}...")
+        print(f"C: Attempting connection to {clientaddress} clientport {clientport}...")
         
         #Ignore timeout errors and continually attempt to connect until it succeeds
         while True:
             try:
-                clientSocketI = socket.create_connection((clientaddress, Port))
+                clientSocketI = socket.create_connection((clientaddress, clientport))
                 break
             except TimeoutError:
                 pass

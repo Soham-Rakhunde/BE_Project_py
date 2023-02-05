@@ -43,6 +43,10 @@ class DataHandler:
         buffer.write(self.AESNonce)
         buffer.write(self.MACtag)
 
+
+        buffer.read(3)
+        buffer.read(3)
+
         # print("Chunk size: ", CHUNK_SIZE)
         # print("Pad size: ", PAD_SIZE)
         # print("buffer size: ", buffer.getbuffer().nbytes)
