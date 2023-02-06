@@ -132,7 +132,7 @@ class TLSender:
         self.remPublicKey = readPub(pubkey)
         print("C: Recieved public key from remote server")
 
-        # print(verifyCert(remPubKey=pubkey, remCert=rcert))
+        print(verifyCert(remPubKey=pubkey, remCert=rcert))
 
         h = hashes.Hash(self.passwd_hashingAlgorithm,backend=default_backend())
         h.update(bytes(remotepassword,'utf8'))

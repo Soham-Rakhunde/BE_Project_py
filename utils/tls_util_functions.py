@@ -12,7 +12,7 @@ from cryptography.x509.oid import NameOID
 #Symmetric key generation
 import cryptography.fernet
 from cryptography.fernet import Fernet
-from cryptography.hazmat.primitives.serialization import load_pem_public_key
+from cryptography.hazmat.primitives.serialization import load_pem_public_key, load_pem_private_key
 from cryptography.hazmat.primitives.asymmetric import padding
 hashingAlgorithm = hashes.SHA512()
 passwd_hashingAlgorithm = hashes.SHA256()
@@ -29,6 +29,7 @@ def makeKey():
     )
     public_key = private_key.public_key()
     return {'private':private_key,'public':public_key}
+
 
 
 #Encrypt a message with assymetric public key
@@ -82,6 +83,19 @@ def writeKey(priv,passwd):
     with open('Identity/private_key.pem', 'wb') as f:
         f.write(priv)
 
+def retrieveKey(passwd):
+    with open("Identity/private_key.pem", "rb") as key_file:
+        private_key = serialization.load_pem_private_key(
+            data=key_file.read(),
+            password=bytes(passwd, encoding='utf-8'),
+            backend=default_backend()
+        )
+        public_key = private_key.public_key()
+        return {'private':private_key,'public':public_key}
+    private_key = load_pem_private_key(pemlines, None, default_backend())
+    return private_key
+
+
 def passwordPromptNG():
         while True:
             print("A: Certificate has not yet been generated. Please enter a secure password to use as the unlock key:")
@@ -93,7 +107,7 @@ def passwordPromptNG():
                 else:
                     print("A: Passwords don't match. Please try again")
 
-#Generating a -signed certificate with an existing private key
+#Generating a self-signed certificate with an existing private key
 def makeCert():
     if not os.path.isfile('Identity/certificate.pem'):
         #Generate private key

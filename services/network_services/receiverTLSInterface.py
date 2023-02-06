@@ -61,6 +61,27 @@ class TLSReceiver:
         self.threadPoolExecutor = threadPoolExecutor
         self.localPort = localPort
 
+        #Create directories to house the host identity, and remote public certs
+        if not os.path.isdir('Identity'):
+            os.mkdir('Identity')
+        if not os.path.isdir('RemoteCerts'):
+            os.mkdir('RemoteCerts')
+        #Generate self-signed certificate if it doesn't exist
+        makeCert()
+
+        #Check that the port number is above 1000, and that all other inputs have something there before proceeding
+        if not type(localPort) == int:
+            raise Exception("Port number must be an integer value >= 1000")
+        elif localPort < 1000:
+            raise Exception("Port number must be an integer value >= 1000")
+        # else:
+        #     #Create a context that doesn't go anywhere, just for making sure the key password is correct before proceeding
+        #     try:
+        #         dummycontext = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        #         dummycontext.load_cert_chain('Identity/certificate.pem', 'Identity/private_key.pem',password=keypasswd)
+        #     except:
+        #         raise Exception("Incorrect cerificate password provided")
+
     def connectToRemoteClient(self, keypasswd,hostpassword,remoteaddress,remotepassword):
         # TLS client socket object
         serverContext = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
@@ -130,14 +151,15 @@ class TLSReceiver:
         print(f"S: Established connection from {self.remClientAddress[0]}")
 
         
-        self.threadPoolExecutor.submit(self.authenticateAndReveive, hostpassword)
-        # return future
+    #     self.threadPoolExecutor.submit(self.authenticateAndReveive, hostpassword, keypasswd)
+    #     # return future
 
-    def authenticateAndReveive(self, hostpassword):
+    # def authenticateAndReveive(self, hostpassword, keyPasswd):
         print("S: Thread Spawned")
         #Generate keypair for password exchange
-        key = makeKey()
-        print("S: Generated Keypair")
+        # key = makeKey()
+        key = retrieveKey(passwd=keypasswd)
+        print("S: Retrieved Keypair")
 
         #Hash the passwords before sending them over the wire
         h = hashes.Hash(self.passwd_hashingAlgorithm,backend=default_backend())
