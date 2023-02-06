@@ -190,8 +190,10 @@ class TLSender:
 
 
     def sendData(self):
-        print("C: sending payload")
-        self.clientSocket.send(bytes(self.payload,'utf-8'))
+        print("C: sending payload", len(self.payload))
+        # self.clientSocket.send(bytes(self.payload,'utf-8'))
+        self.clientSocket.send(self.payload)
+
         # self.peerMAC = self.recieveSocket.recv() TODO: receive the loacation
         self.clientSocket.close()
         print("Closing sockets")

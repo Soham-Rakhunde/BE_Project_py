@@ -12,7 +12,7 @@ class EncryptionService:
         aes = AES.new(keyService.key, AES.MODE_EAX)
         _dataHandler.AESNonce = aes.nonce
         _dataHandler.cipher, _dataHandler.MACtag = aes.encrypt_and_digest(_dataHandler.data)
-        print(len(aes.nonce), len(_dataHandler.MACtag))
+        # print(len(aes.nonce), len(_dataHandler.MACtag))
 
     @staticmethod
     def decrypt(_dataHandler: DataHandler) -> bytes:

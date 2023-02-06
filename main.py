@@ -12,7 +12,7 @@ if __name__ == "__main__":
     _dataHandler = DataHandler('C:\\Users\\soham\\OneDrive\\Pictures\\Wallpapers\\3433.jpg')
     EncryptionService.encrypt(_dataHandler)
     buffer = Partitioner.partition(_dataHandler)
-    
+    print("Tracker")
     tracker = Tracker(bufferObj=buffer)
     tracker.send_chunks()
     # EncryptionService.decrypt(_dataHandler)
@@ -23,7 +23,7 @@ if __name__ == "__main__":
 
     # print(external_ip)
 
-    tracker = P2PNetworkHandler()
+    # tracker = P2PNetworkHandler()
 
 # import concurrent.futures
 # from concurrent.futures import ProcessPoolExecutor

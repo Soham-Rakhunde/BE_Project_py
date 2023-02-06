@@ -1,13 +1,6 @@
 import concurrent.futures
 from services.network_services.senderTLSInterface import TLSender
 
-def sender(tlsSender):
-    print("C: sending payload")
-    tlsSender.clientSocket.send(bytes(tlsSender.payload,'utf-8'))
-    # self.peerMAC = self.recieveSocket.recv() TODO: receive the loacation
-    tlsSender.clientSocket.close()
-    print("Closing sockets")
-
 if __name__ == '__main__':
     with concurrent.futures.ThreadPoolExecutor() as executor:
         futs = []

@@ -8,9 +8,10 @@
 
 #Items necessary to perform operations with private/public keys
 from concurrent.futures import ThreadPoolExecutor
+import io
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
-from utils.constants import CHUNK_SIZE
+from utils.constants import CHUNK_SIZE, TLS_MAX_SIZE
 from utils.tls_util_functions import *
 
 
@@ -209,10 +210,12 @@ class TLSReceiver:
         print("S: Done")
 
         print("S: recieving payload")
-        self.payload = self.remClientSocket.recv(CHUNK_SIZE)
+        self.payload = io.BytesIO()
+        for _ in range(int(CHUNK_SIZE/TLS_MAX_SIZE)):
+            self.payload.write(self.remClientSocket.recv(TLS_MAX_SIZE))
         
-        self.payload = self.payload.decode('utf8')
-        print("S: recieved", self.payload)
+        # self.payload = self.payload.decode('utf8')
+        print("S: recieved", self.payload.getbuffer().nbytes)
         # self.sendSocket.send() TODO: send back loaction of the file
         self.remClientSocket.close()
         print("S: Closing sockets")
