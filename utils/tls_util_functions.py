@@ -12,8 +12,8 @@ from cryptography.x509.oid import NameOID
 #Symmetric key generation
 import cryptography.fernet
 from cryptography.fernet import Fernet
-
-
+from cryptography.hazmat.primitives.serialization import load_pem_public_key
+from cryptography.hazmat.primitives.asymmetric import padding
 hashingAlgorithm = hashes.SHA512()
 passwd_hashingAlgorithm = hashes.SHA256()
 passwd_attempts = 4
@@ -144,3 +144,20 @@ def makeCert():
 
         #Write private key to file
         writeKey(key,password)
+
+
+def verifyCert(remPubKey, remCert):
+    issuer_public_key = load_pem_public_key(remPubKey)
+    cert_to_check = x509.load_der_x509_certificate(remCert)
+    try:
+        issuer_public_key.verify(
+            cert_to_check.signature,
+            cert_to_check.tbs_certificate_bytes,
+            # Depends on the algorithm used to create the certificate
+            padding.PKCS1v15(),
+            cert_to_check.signature_hash_algorithm,
+        )
+        return True
+    except Exception as e:
+        print("exception ", e)
+        return False

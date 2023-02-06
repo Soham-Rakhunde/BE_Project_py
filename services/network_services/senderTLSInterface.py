@@ -7,7 +7,7 @@
 
 
 #Items necessary to perform operations with private/public keys
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
 from utils.tls_util_functions import *
 
 #Symmetric key generation
@@ -45,7 +45,7 @@ class TLSender:
     timeout: int = 0
 
 
-    multiProcessExecutor: ProcessPoolExecutor = None
+    threadPoolExecutor: ThreadPoolExecutor = None
     payload: bytes = None
 
     clientSocket: ssl.SSLSocket = None
@@ -56,21 +56,21 @@ class TLSender:
     passwd_attempts = 4
     BufferSize = 1024
 
-    def __init__(self, payload: bytes, multiProcessExecutor: ProcessPoolExecutor, remoteAddress: str, remotePort: int):
+    def __init__(self, payload: bytes, threadPoolExecutor: ThreadPoolExecutor, remoteAddress: str, remotePort: int):
         self.remServerAddress = remoteAddress
-        self.multiProcessExecutor = multiProcessExecutor
+        self.threadPoolExecutor = threadPoolExecutor
         self.payload = payload
         self.remotePort = remotePort
-        print("init")
 
     def connectToRemoteServer(self, remotepassword):
         #TLS server context
         clientContext = ssl.SSLContext(ssl.PROTOCOL_TLS)
         #Attempt to connect to a remote address with a regular socket
-        print(f"C: Attempting connection to remServerAddress:{self.remServerAddress} remotePort {self.remotePort}...")
         
         #Ignore timeout errors and continually attempt to connect until it succeeds
-        while True:
+        maxTries = self.remotePort + 20
+        while self.remotePort < maxTries:
+            print(f"C: Attempting connection to remServerAddress:{self.remServerAddress} remotePort {self.remotePort}...")
             try:
                 clientSocketI = socket.create_connection((self.remServerAddress, self.remotePort))
                 break
@@ -78,19 +78,19 @@ class TLSender:
                 pass
             except ConnectionAbortedError:
                 print('C: A connection was established, but then refused by the host')
+                # self.remotePort += 1
             except OSError as e:
                 print('C: No route found found to host,', e)
-                # break
-
+                # self.remotePort += 1
         #After connection, secure the socket
         self.clientSocket = clientContext.wrap_socket(clientSocketI, server_hostname=self.remServerAddress)
         #Pass that socket up to the global scope pefore the therad ends, so that the main function can utilize it
-        print(f"C: Connection established to remServerAddress:{self.remServerAddress}")
-        # future = self.multiProcessExecutor.submit(self.authenticateAndSend, remotepassword)
-        # return future
+        print(f"C: Connection established to remServerAddress:{self.remServerAddress}:{self.remotePort}")
+        fut = self.threadPoolExecutor.submit(self.authenticateAndSend, remotepassword)
+        # print(fut.result())
 
-    # def authenticateAndSend(self, remotepassword):
-    #     print("C: Authentication")
+    def authenticateAndSend(self, remotepassword):
+        print("C: Thread Spawned")
         #Get remote address and certificate to validate if a cert is good or not
         raddr = self.clientSocket.getpeername()[0]
         rcert = self.clientSocket.getpeercert(True)
@@ -117,9 +117,6 @@ class TLSender:
             else:
                 print(f'C: ALERT - {raddr} identity has changed\t <-------------------')
 
-        #Send the socket up to the main thread, and disable timeout
-        # self.c_socket.append(clientSocket)
-        # self.c_socket[0].settimeout(None)
         self.clientSocket.settimeout(None)
 
 
@@ -134,6 +131,8 @@ class TLSender:
         pubkey = self.clientSocket.recv(self.BufferSize)
         self.remPublicKey = readPub(pubkey)
         print("C: Recieved public key from remote server")
+
+        # print(verifyCert(remPubKey=pubkey, remCert=rcert))
 
         h = hashes.Hash(self.passwd_hashingAlgorithm,backend=default_backend())
         h.update(bytes(remotepassword,'utf8'))
@@ -179,8 +178,8 @@ class TLSender:
         # symmkeyCypherSuite= Fernet(symmkeyLocal)
         print(f"C: Sent symmetric key to {self.remServerAddress}")
         print("C: Done")
-
-        
+        self.sendData()
+        return "YES DONE"
         # return {
         #     'localS':remoteSocket,
         #     'remoteS':self.c_socket[0],
@@ -188,6 +187,9 @@ class TLSender:
         #     'remoteK':symmkeyRemote
         # }
 
+
+
+    def sendData(self):
         print("C: sending payload")
         self.clientSocket.send(bytes(self.payload,'utf-8'))
         # self.peerMAC = self.recieveSocket.recv() TODO: receive the loacation

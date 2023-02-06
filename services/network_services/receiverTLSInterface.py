@@ -7,7 +7,7 @@
 
 
 #Items necessary to perform operations with private/public keys
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from utils.constants import CHUNK_SIZE
@@ -46,7 +46,7 @@ class TLSReceiver:
     timeout: int = 0
 
 
-    multiProcessExecutor: ProcessPoolExecutor = None
+    threadPoolExecutor: ThreadPoolExecutor = None
     payload: bytes = None
  
     remClientSocket: ssl.SSLSocket = None  # as we maintrain remote clients socket as interface
@@ -56,9 +56,9 @@ class TLSReceiver:
     passwd_attempts = 4
     BufferSize = 1024
 
-    def __init__(self, multiProcessExecutor: ProcessPoolExecutor, remoteAddress: str, localPort: int):
+    def __init__(self, threadPoolExecutor: ThreadPoolExecutor, remoteAddress: str, localPort: int):
         self.remClientAddress = remoteAddress
-        self.multiProcessExecutor = multiProcessExecutor
+        self.threadPoolExecutor = threadPoolExecutor
         self.localPort = localPort
 
     def connectToRemoteClient(self, keypasswd,hostpassword,remoteaddress,remotepassword):
@@ -130,6 +130,11 @@ class TLSReceiver:
         print(f"S: Established connection from {self.remClientAddress[0]}")
 
         
+        self.threadPoolExecutor.submit(self.authenticateAndReveive, hostpassword)
+        # return future
+
+    def authenticateAndReveive(self, hostpassword):
+        print("S: Thread Spawned")
         #Generate keypair for password exchange
         key = makeKey()
         print("S: Generated Keypair")
