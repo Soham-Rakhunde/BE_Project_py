@@ -10,6 +10,7 @@ from services.tracker_module import Tracker
 if __name__ == "__main__":
     # TODO input file path
     _dataHandler = DataHandler('C:\\Users\\soham\\OneDrive\\Pictures\\Wallpapers\\3433.jpg')
+    _dataHandler.read_file()
     EncryptionService.encrypt(_dataHandler)
     buffer = Partitioner.partition(_dataHandler)
     print("Tracker")

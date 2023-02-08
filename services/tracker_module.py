@@ -24,7 +24,7 @@ class Tracker:
                 print("CHUNK", i)
                 chunk = self.bufferObj.read(CHUNK_SIZE)
                 hmac = HMAC_Module.generateHMAC(chunk) # TODO: save HMAC in traceker file
-                ob = TLSender(payload= chunk, threadPoolExecutor = executor, remoteAddress = '192.168.0.105', remotePort =11111+i)
+                ob = TLSender(payload= chunk, threadPoolExecutor = executor, remoteAddress = '192.168.9.75', remotePort =11111+i)
                 # res = executor.map(ob.connectToRemoteServer, remotepassword='P@ssw0rd')
                 ob.connectToRemoteServer(remotepassword='P@ssw0rd')
                 # futs.append(ob.connectToRemoteServer(remotepassword='P@ssw0rd'))

@@ -15,7 +15,7 @@ class EncryptionService:
         # print(len(aes.nonce), len(_dataHandler.MACtag))
 
     @staticmethod
-    def decrypt(_dataHandler: DataHandler) -> bytes:
+    def decrypt(_dataHandler: DataHandler):
         keyService = KeyHandler()
         aes = AES.new(keyService.key, AES.MODE_EAX, _dataHandler.AESNonce)
 

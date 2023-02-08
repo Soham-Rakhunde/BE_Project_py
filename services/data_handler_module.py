@@ -8,9 +8,8 @@ class DataHandler:
     AESNonce: bytes = None # Needed for decryption, Save with file
     MACtag: bytes = None   # Neeed for decryption, Save with file
 
-    def __init__(self, file_path: str):
+    def __init__(self, file_path: str = None):
         self.file_path = file_path
-        self.read_file()
 
     def read_file(self):
         with open(self.file_path, 'rb') as f:
@@ -20,7 +19,7 @@ class DataHandler:
 
 
     '''pads the data for 512KB Chunk and stores in format:
-        First 3 bytes for size of the pad
+        -> First 3 bytes for size of the pad
         -> then the pad (if any) 
         -> then the cipher 
         -> 16 bytes of AESNonce 
@@ -44,16 +43,32 @@ class DataHandler:
         buffer.write(self.MACtag)
 
 
-        buffer.read(3)
-        buffer.read(3)
+        # buffer.read(3)
+        # buffer.read(3)
 
-        # print("Chunk size: ", CHUNK_SIZE)
-        # print("Pad size: ", PAD_SIZE)
-        # print("buffer size: ", buffer.getbuffer().nbytes)
+        print("Chunk size: ", CHUNK_SIZE)
+        print("Pad size: ", PAD_SIZE)
+        print("buffer size: ", buffer.getbuffer().nbytes)
         return buffer
         
-    # def decode(self):
-    # TODO decode and unpad and save in the object members
+    def decode(self, buffer: io.BytesIO):
+        print(type(buffer), buffer.getbuffer().nbytes)
+        
+        buffer.seek(0)
+        pad_size_bin = buffer.read1(3)
+        PAD_SIZE = int.from_bytes(pad_size_bin, byteorder ='big')
+
+        buffer.read1(PAD_SIZE)
+        print("PAD_SIZE", PAD_SIZE)
+        
+        CIPHER_SIZE = buffer.getbuffer().nbytes - 16 - 16 - 3 - PAD_SIZE
+        self.cipher = buffer.read1(CIPHER_SIZE)
+        self.AESNonce = buffer.read1(16)
+        self.MACtag = buffer.read1(16)
+        print("CIPHEr: ", CIPHER_SIZE, " ",len(self.cipher))
+        print("AESNonce: ",len(self.AESNonce))
+        print("MACtag: ",len(self.MACtag))
+
 
     def write_file(self, save_path = 'C:\\Users\\soham\\OneDrive\\Desktop\\3433.jpg'):
         # TODO ask for file path

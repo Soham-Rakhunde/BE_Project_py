@@ -83,7 +83,7 @@ class TLSReceiver:
         #     except:
         #         raise Exception("Incorrect cerificate password provided")
 
-    def connectToRemoteClient(self, keypasswd,hostpassword,remoteaddress,remotepassword):
+    def connectToRemoteClient(self, keypasswd,hostpassword,remotepassword):
         # TLS client socket object
         serverContext = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         serverContext.load_cert_chain('Identity/certificate.pem', 'Identity/private_key.pem', password=keypasswd)
@@ -133,6 +133,7 @@ class TLSReceiver:
 
         #Start listening for connection
         serverSocket.listen(1)
+        remoteAddress = self.remClientAddress
         try:
             self.remClientSocket, self.remClientAddress = serverSocket.accept() 
         except ConnectionAbortedError:
@@ -141,11 +142,11 @@ class TLSReceiver:
         print("S: Connected to client addre:", self.remClientAddress)
         #If the remote connection was localhost (operation cancelled), exit the script
         if self.remClientAddress[0] == '127.0.0.1':
-            self.remoteSocket.close()
+            serverSocket.close()
             print("S: Connection Cancelled, or timed out")
             return
-        if self.remClientAddress[0] != remoteaddress:
-            self.remoteSocket.close()
+        if self.remClientAddress[0] != remoteAddress:
+            serverSocket.close()
             print(f"S: Connection recieved from unexpected host ({self.remClientAddress[0]})")
             return
 
@@ -207,8 +208,6 @@ class TLSReceiver:
         symmkeyRemote = Fernet(symmkeyRemote)
         print(f"S: Recieved symmetric key from {self.remClientAddress[0]}")
 
-        print("S: Done")
-
         print("S: recieving payload")
         self.payload = io.BytesIO()
         for _ in range(int(CHUNK_SIZE/TLS_MAX_SIZE)):
@@ -219,6 +218,4 @@ class TLSReceiver:
         # self.sendSocket.send() TODO: send back loaction of the file
         self.remClientSocket.close()
         print("S: Closing sockets")
-
-# ob = TLSReceiver(multiProcessExecutor = None, remoteAddress = '192.168.0.105')
-# ob.connectToRemoteClient(keypasswd='G00dP@ssw0rd', hostpassword ='P@ssw0rd',remotepassword ='P@ssw0rd',remoteAddress="Password")
+        return self.payload
