@@ -10,7 +10,7 @@ class Partitioner:
     @staticmethod
     def partition(_dataHandler: DataHandler) -> io.BytesIO:
         bufferObj = _dataHandler.encode_and_pad()
-        del _dataHandler
+        # del _dataHandler
         print(CHUNK_SIZE)
         # bufferObj.seek(0)
         # num_of_chunks = bufferObj.getbuffer().nbytes

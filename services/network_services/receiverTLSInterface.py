@@ -213,6 +213,9 @@ class TLSReceiver:
         for _ in range(int(CHUNK_SIZE/TLS_MAX_SIZE)):
             self.payload.write(self.remClientSocket.recv(TLS_MAX_SIZE))
         
+        # TODO: send authentic location
+        self.remClientSocket.send(bytes("C://Desktop//2433.jpg",'utf-8'))
+
         # self.payload = self.payload.decode('utf8')
         print("S: recieved", self.payload.getbuffer().nbytes)
         # self.sendSocket.send() TODO: send back loaction of the file

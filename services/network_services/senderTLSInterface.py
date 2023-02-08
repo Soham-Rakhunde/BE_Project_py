@@ -86,7 +86,7 @@ class TLSender:
         self.clientSocket = clientContext.wrap_socket(clientSocketI, server_hostname=self.remServerAddress)
         #Pass that socket up to the global scope pefore the therad ends, so that the main function can utilize it
         print(f"C: Connection established to remServerAddress:{self.remServerAddress}:{self.remotePort}")
-        fut = self.threadPoolExecutor.submit(self.authenticateAndSend, remotepassword)
+        self.remoteLocationFuture = self.threadPoolExecutor.submit(self.authenticateAndSend, remotepassword)
         # print(fut.result())
 
     def authenticateAndSend(self, remotepassword):
@@ -177,16 +177,14 @@ class TLSender:
         self.clientSocket.send(encrypt(self.remPublicKey, symmkeyLocal))
         # symmkeyCypherSuite= Fernet(symmkeyLocal)
         print(f"C: Sent symmetric key to {self.remServerAddress}")
-        print("C: Done")
-        self.sendData()
-        return "YES DONE"
-        # return {
-        #     'localS':remoteSocket,
-        #     'remoteS':self.c_socket[0],
-        #     'localK':symmkeyLocal,
-        #     'remoteK':symmkeyRemote
-        # }
 
+        self.sendData()
+        location = self.receiveLocation()
+        
+        self.clientSocket.close()
+        print("Sockets closed successfully")
+
+        return location
 
 
     def sendData(self):
@@ -194,7 +192,6 @@ class TLSender:
         # self.clientSocket.send(bytes(self.payload,'utf-8'))
         self.clientSocket.send(self.payload)
 
-        # self.peerMAC = self.recieveSocket.recv() TODO: receive the loacation
-        self.clientSocket.close()
-        print("Closing sockets")
-        # return
+    def receiveLocation(self):
+        location = self.clientSocket.recv(self.BufferSize)
+        return location.decode('utf8')

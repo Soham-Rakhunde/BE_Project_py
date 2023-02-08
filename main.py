@@ -1,8 +1,6 @@
 from services.encrypt_module import EncryptionService
 from services.data_handler_module import DataHandler
-from services.key_handling_module import KeyHandler
 from services.partitioning_module import Partitioner
-from services.network_services.p2p_network_handler import P2PNetworkHandler
 import base64
 
 from services.tracker_module import Tracker
@@ -15,7 +13,7 @@ if __name__ == "__main__":
     buffer = Partitioner.partition(_dataHandler)
     print("Tracker")
     tracker = Tracker(bufferObj=buffer)
-    tracker.send_chunks()
+    tracker.send_chunks(_dataHandler)
     # EncryptionService.decrypt(_dataHandler)
     # _dataHandler.write_file()
     # import urllib.request

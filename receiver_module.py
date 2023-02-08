@@ -9,7 +9,6 @@ if __name__ == '__main__':
     
     buffers = dict()
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        futs = []
         for i in range(3):
             print("START", i)
             ob = TLSReceiver(threadPoolExecutor = executor, remoteAddress = '192.168.9.75', localPort= 11111+i)
@@ -25,7 +24,6 @@ if __name__ == '__main__':
 
     mergedBuffer = Partitioner.merge(buffers)
     _dataHandler = DataHandler()
-    # print(type(mergedBuffer))
     _dataHandler.decode(buffer=mergedBuffer)
     
     EncryptionService.decrypt(_dataHandler)
