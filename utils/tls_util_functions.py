@@ -10,8 +10,6 @@ from cryptography import x509
 from cryptography.x509.oid import NameOID
 
 #Symmetric key generation
-import cryptography.fernet
-from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives.serialization import load_pem_public_key, load_pem_private_key
 from cryptography.hazmat.primitives.asymmetric import padding
 hashingAlgorithm = hashes.SHA512()

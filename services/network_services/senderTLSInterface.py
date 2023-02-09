@@ -55,12 +55,14 @@ class TLSender:
     passwd_hashingAlgorithm = hashes.SHA256()
     passwd_attempts = 4
     BufferSize = 1024
+    retrievalMode = False # if true then it works as a sender of only the data
 
-    def __init__(self, payload: bytes, threadPoolExecutor: ThreadPoolExecutor, remoteAddress: str, remotePort: int):
+    def __init__(self, payload: bytes, threadPoolExecutor: ThreadPoolExecutor, remoteAddress: str, remotePort: int, retrievalMode: bool=False):
         self.remServerAddress = remoteAddress
         self.threadPoolExecutor = threadPoolExecutor
         self.payload = payload
         self.remotePort = remotePort
+        self.retrievalMode = retrievalMode
 
     def connectToRemoteServer(self, remotepassword):
         #TLS server context
@@ -179,7 +181,11 @@ class TLSender:
         print(f"C: Sent symmetric key to {self.remServerAddress}")
 
         self.sendData()
-        location = self.receiveLocation()
+        
+        if not self.retrievalMode:
+            location = self.receiveLocation()
+        else:
+            location = None
         
         self.clientSocket.close()
         print("Sockets closed successfully")
