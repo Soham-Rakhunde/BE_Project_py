@@ -19,10 +19,7 @@ class Tracker:
         {'ip': '192.168.0.103', 'port':11111, 'mac':'44:AF:28:F2:EB:3A'},
         {'ip': '192.168.0.103', 'port':11111, 'mac':'44:AF:28:F2:EB:3A'},
         {'ip': '192.168.0.103', 'port':11111, 'mac':'44:AF:28:F2:EB:3A'},
-        {'ip': '192.168.0.103', 'port':11111, 'mac':'44:AF:28:F2:EB:3A'},
-        {'ip': '192.168.0.103', 'port':11111, 'mac':'44:AF:28:F2:EB:3A'},
-        {'ip': '192.168.0.103', 'port':11111, 'mac':'44:AF:28:F2:EB:3A'},
-        {'ip': '192.168.0.103', 'port':11111, 'mac':'44:AF:28:F2:EB:3A'},
+        {'ip': '192.168.0.103', 'port':11111, 'mac':'44:AF:28:F2:EB:3A'}
     ]
 
 
@@ -57,6 +54,7 @@ class Tracker:
                 #iterate for redundancy over multiple peers
                 for j in range(self.nodes_redundancy_ratio):
                     peer_number = chunk_id*(j+1)
+                    print("Tracker: Initaiting with peernumber", peer_number)
                     sendHandler = HostTLSInterface(
                         payload= chunk, 
                         threadPoolExecutor = executor, 
@@ -65,14 +63,16 @@ class Tracker:
                         remotePort = 11111 + peer_number
                     )
                     sendHandler.connectToRemoteServer(remotepassword='P@ssw0rd')
-                    future = sendHandler.remoteLocationFuture
+                    future = sendHandler.locationFuture
+                    print("BLOJ ", peer_number)
                     futuresDict[future] = {
                         'id': chunk_id,
                         'hmac':  base64.b64encode(hmac).decode("ascii"),
                         'address': self.peersList[peer_number]['ip'],
                         'mac_addr': self.peersList[peer_number]['mac']
                     }
-                print("LOOP", chunk_id)
+                    print("LOJ ", peer_number)
+                print("LOOP ", chunk_id)
             
             self.trackerFileCreator(futuresDict)
             

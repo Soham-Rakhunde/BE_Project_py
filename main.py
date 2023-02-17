@@ -16,11 +16,11 @@ if __name__ == "__main__":
     tracker.send_chunks(_dataHandler)
     # EncryptionService.decrypt(_dataHandler)
     # _dataHandler.write_file()
-    import urllib.request
+    # import urllib.request
 
-    external_ip = urllib.request.urlopen('https://v4.ident.me').read().decode('utf8')
+    # external_ip = urllib.request.urlopen('https://v4.ident.me').read().decode('utf8')
 
-    print(external_ip)
+    # print(external_ip)
 
     # tracker = P2PNetworkHandler()
 

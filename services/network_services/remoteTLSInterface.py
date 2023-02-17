@@ -163,8 +163,7 @@ class RemoteTLSInterface:
         print(f"S: Established connection from {self.remClientAddress[0]}")
 
         
-        future = self.threadPoolExecutor.submit(self.authenticateAndReveive, hostpassword, keypasswd)
-        return future
+        self.payloadFuture = self.threadPoolExecutor.submit(self.authenticateAndReveive, hostpassword, keypasswd)
 
     def authenticateAndReveive(self, hostpassword, keypasswd):
         print("S: Thread Spawned")
@@ -239,8 +238,8 @@ class RemoteTLSInterface:
             print("S: (not RetrievalMode): saving payload and sending locations of stored files")
             for _ in range(self.localRedundancyCount):
                 fileName = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for i in range(10))
-                locations.append(f"C://Desktop//{fileName}.bin")
-                self.savePayload(f"C://Desktop//{fileName}.bin")
+                locations.append(f"C://Users//soham//OneDrive//Desktop//{fileName}.bin")
+                self.savePayload(f"C://Users//soham//OneDrive//Desktop//{fileName}.bin")
 
             sendLocationsList(socket=self.remClientSocket, locationList=locations)
         else:
@@ -253,7 +252,7 @@ class RemoteTLSInterface:
         return self.payload
     
     def savePayload(self, location):
-        with open("output.txt", "wb") as f:
+        with open(location, "wb") as f:
             self.payload.seek(0)
             f.write(self.payload.getbuffer())
     
