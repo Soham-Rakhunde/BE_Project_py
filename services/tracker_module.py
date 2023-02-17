@@ -5,7 +5,7 @@ import concurrent.futures
 
 from utils.constants import *
 from services.hmac_module import HMAC_Module
-from services.network_services.hostTLSInterface import RemoteTLS
+from services.network_services.hostTLSInterface import HostTLSInterface
 
 class Tracker:
     bufferObj: io.BufferedIOBase = None
@@ -57,7 +57,7 @@ class Tracker:
                 #iterate for redundancy over multiple peers
                 for j in range(self.nodes_redundancy_ratio):
                     peer_number = chunk_id*(j+1)
-                    sendHandler = RemoteTLS(
+                    sendHandler = HostTLSInterface(
                         payload= chunk, 
                         threadPoolExecutor = executor, 
                         remoteAddress = self.peersList[peer_number]['ip'], 

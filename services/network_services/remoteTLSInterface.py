@@ -39,7 +39,7 @@ except:
 import threading
 
 
-class HostTLS:
+class RemoteTLSInterface:
     # Local is SERVER here - Receiver
     # Remote is CLIENT here - Sender
     # As server(receiver) listens to client connections to receive data from clients(Sender)

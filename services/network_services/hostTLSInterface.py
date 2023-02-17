@@ -37,7 +37,7 @@ import re               #For user input validations
 #For managing the self-signed cert, and incoming public certificates
 import os
 
-class RemoteTLS:
+class HostTLSInterface:
     # Local is Client here
     # Remote is Server here
     # As server listens to client connections to receive data from clients(Sender)
