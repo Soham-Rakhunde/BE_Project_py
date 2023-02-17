@@ -1,7 +1,7 @@
 import json
 from services.data_handler_module import DataHandler
 from services.encrypt_module import EncryptionService
-from services.network_services.receiverTLSInterface import TLSReceiver
+from services.network_services.remoteTLSInterface import HostTLS
 import concurrent.futures
 from collections import deque
 from services.partitioning_module import Partitioner
@@ -48,7 +48,7 @@ class Retriever:
                 curChunk = self.chunkQueue.popleft()
                 
                 print("Retriever: Retrieving chunk", curChunk['id'])
-                receiver = TLSReceiver(threadPoolExecutor = executor, remoteAddress = curChunk['address'], localPort= 11111+curChunk['id']) #port change TODO
+                receiver = HostTLS(threadPoolExecutor = executor, remoteAddress = curChunk['address'], localPort= 11111+curChunk['id']) #port change TODO
                 fut = executor.submit(receiver.connectToRemoteClient,keypasswd='G00dP@ssw0rd', hostpassword ='P@ssw0rd',remotepassword ='P@ssw0rd')
                 
                 if fut != None:

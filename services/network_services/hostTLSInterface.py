@@ -8,9 +8,11 @@
 
 #Items necessary to perform operations with private/public keys
 from concurrent.futures import ThreadPoolExecutor
+import io
 import pathlib
 import pickle
-from utils.constants import CHUNK_SIZE
+from utils.constants import CHUNK_SIZE, TLS_MAX_SIZE
+from utils.socket_util_functions import receiveLocationsList, receivePayload, sendLocationsList, sendMsg
 from utils.tls_util_functions import *
 
 #Symmetric key generation
@@ -35,11 +37,11 @@ import re               #For user input validations
 #For managing the self-signed cert, and incoming public certificates
 import os
 
-class TLSender:
+class RemoteTLS:
     # Local is Client here
     # Remote is Server here
     # As server listens to client connections to receive data from clients(Sender)
-    # if retrieval Mode this will act oppositely differently check flags
+    # if retrieval Mode this will work as receiver
     
     localClientAddress = None
     remServerAddress: str = None
@@ -48,6 +50,8 @@ class TLSender:
     remPublicKey = None
     timeout: int = 0
     retreivalMode: bool = False
+    localRedundancyCount = 2 # TODO
+    locationsList: list = None
 
 
     threadPoolExecutor: ThreadPoolExecutor = None
@@ -60,14 +64,15 @@ class TLSender:
     passwd_hashingAlgorithm = hashes.SHA256()
     passwd_attempts = 4
     BufferSize = 1024
-    retrievalMode = False # if true then it works as a sender of only the data
+    retrievalMode = False # if true then it works as a receiver
 
-    def __init__(self, threadPoolExecutor: ThreadPoolExecutor, remoteAddress: str, remotePort: int, payload: bytes = None, retrievalMode: bool=False):
+    def __init__(self, threadPoolExecutor: ThreadPoolExecutor, remoteAddress: str, remotePort: int, payload: bytes = None, retrievalMode: bool=False, locationsList: list= None):
         self.remServerAddress = remoteAddress
         self.threadPoolExecutor = threadPoolExecutor
         self.payload = payload
         self.remotePort = remotePort
         self.retrievalMode = retrievalMode
+        self.locationsList = locationsList
 
     def connectToRemoteServer(self, remotepassword):
         #TLS server context
@@ -185,45 +190,21 @@ class TLSender:
         # symmkeyCypherSuite= Fernet(symmkeyLocal)
         print(f"C: Sent symmetric key to {self.remServerAddress}")
 
-        if self.retreivalMode:
-            print("C: (retreivalMode): receiving locations to send them and load in memory")
-            locations = self.receiveLocation()
-            self.loadDataFromStorage(locationList=locations)
-            if self.payload == None:
-                "C: Data not found, exiting..."
-                self.clientSocket.close()
-                return
-
-
-        self.sendData()
         
-        if not self.retrievalMode:
-            print("C: (not retreivalMode): receiving locations to store at tracker")
-            locations = self.receiveLocation()
-            print("C: ", locations)
+        if self.retrievalMode:
+            sendMsg(socket=self.clientSocket, msg="RetrievalMode")
+            print("C: (RetrievalMode): sending locations list")
+            print("C: (RetrievalMode)",self.locationsList)
+            sendLocationsList(socket=self.clientSocket, locationList=self.locationsList)
+            self.payload = receivePayload(socket=self.clientSocket)
+            self.clientSocket.close()
+            print("Sockets closed successfully")
+            return 
         else:
-            locations = None
-        
-        self.clientSocket.close()
-        print("Sockets closed successfully")
-
-        return locations
-
-
-    def sendData(self):
-        print("C: sending payload", len(self.payload))
-        # self.clientSocket.send(bytes(self.payload,'utf-8'))
-        self.clientSocket.send(self.payload)
-
-    def loadDataFromStorage(self, locationList):
-        for path in locationList:
-            my_file = pathlib.Path(path)
-            if my_file.is_file():
-                with open(path, "rb") as f:
-                    self.payload = f.read()
-                    if(len(self.payload) == CHUNK_SIZE):
-                        return
-
-    def receiveLocation(self):
-        locations = self.clientSocket.recv(self.BufferSize)
-        return pickle.loads(locations)
+            sendMsg(socket=self.clientSocket, msg="StorageMode")
+            print("C: (not retrievalMode) Sending the Payload")
+            self.clientSocket.send(self.payload)
+            print("C: (not retreivalMode): receiving locations to store at tracker")
+            self.locationsList = receiveLocationsList(socket=self.clientSocket, BufferSize=self.BufferSize)
+            print("C: (not retreivalMode) ", self.locationsList)
+            return self.locationsList
