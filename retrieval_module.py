@@ -8,7 +8,6 @@ from services.partitioning_module import Partitioner
 from utils.constants import CHUNK_SIZE
 
 class Retriever:
-
     def __init__(self, tracker_path):
         self.tracker_path = tracker_path
 

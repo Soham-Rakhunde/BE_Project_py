@@ -8,6 +8,9 @@
 
 #Items necessary to perform operations with private/public keys
 from concurrent.futures import ThreadPoolExecutor
+import pathlib
+import pickle
+from utils.constants import CHUNK_SIZE
 from utils.tls_util_functions import *
 
 #Symmetric key generation
@@ -36,13 +39,15 @@ class TLSender:
     # Local is Client here
     # Remote is Server here
     # As server listens to client connections to receive data from clients(Sender)
-
+    # if retrieval Mode this will act oppositely differently check flags
+    
     localClientAddress = None
     remServerAddress: str = None
     localPort: int = None
     remotePort: int = None
     remPublicKey = None
     timeout: int = 0
+    retreivalMode: bool = False
 
 
     threadPoolExecutor: ThreadPoolExecutor = None
@@ -57,7 +62,7 @@ class TLSender:
     BufferSize = 1024
     retrievalMode = False # if true then it works as a sender of only the data
 
-    def __init__(self, payload: bytes, threadPoolExecutor: ThreadPoolExecutor, remoteAddress: str, remotePort: int, retrievalMode: bool=False):
+    def __init__(self, threadPoolExecutor: ThreadPoolExecutor, remoteAddress: str, remotePort: int, payload: bytes = None, retrievalMode: bool=False):
         self.remServerAddress = remoteAddress
         self.threadPoolExecutor = threadPoolExecutor
         self.payload = payload
@@ -180,17 +185,29 @@ class TLSender:
         # symmkeyCypherSuite= Fernet(symmkeyLocal)
         print(f"C: Sent symmetric key to {self.remServerAddress}")
 
+        if self.retreivalMode:
+            print("C: (retreivalMode): receiving locations to send them and load in memory")
+            locations = self.receiveLocation()
+            self.loadDataFromStorage(locationList=locations)
+            if self.payload == None:
+                "C: Data not found, exiting..."
+                self.clientSocket.close()
+                return
+
+
         self.sendData()
         
         if not self.retrievalMode:
-            location = self.receiveLocation()
+            print("C: (not retreivalMode): receiving locations to store at tracker")
+            locations = self.receiveLocation()
+            print("C: ", locations)
         else:
-            location = None
+            locations = None
         
         self.clientSocket.close()
         print("Sockets closed successfully")
 
-        return location
+        return locations
 
 
     def sendData(self):
@@ -198,6 +215,15 @@ class TLSender:
         # self.clientSocket.send(bytes(self.payload,'utf-8'))
         self.clientSocket.send(self.payload)
 
+    def loadDataFromStorage(self, locationList):
+        for path in locationList:
+            my_file = pathlib.Path(path)
+            if my_file.is_file():
+                with open(path, "rb") as f:
+                    self.payload = f.read()
+                    if(len(self.payload) == CHUNK_SIZE):
+                        return
+
     def receiveLocation(self):
-        location = self.clientSocket.recv(self.BufferSize)
-        return location.decode('utf8')
+        locations = self.clientSocket.recv(self.BufferSize)
+        return pickle.loads(locations)

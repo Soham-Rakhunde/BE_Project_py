@@ -9,6 +9,9 @@
 #Items necessary to perform operations with private/public keys
 from concurrent.futures import ThreadPoolExecutor
 import io
+import pickle
+import secrets
+import string
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from utils.constants import CHUNK_SIZE, TLS_MAX_SIZE
@@ -38,6 +41,7 @@ class TLSReceiver:
     # Local is SERVER here - Receiver
     # Remote is CLIENT here - Sender
     # As server(receiver) listens to client connections to receive data from clients(Sender)
+    # if retrieval Mode this will act oppositely differently check flags
 
     localServerAddress = None
     remClientAddress: str = None
@@ -45,7 +49,9 @@ class TLSReceiver:
     remotePort: int = None
     remPublicKey = None
     timeout: int = 0
-
+    retreivalMode: bool = False
+    localRedundancyCount = 2 # TODO
+    locationsList: list = None
 
     threadPoolExecutor: ThreadPoolExecutor = None
     payload: bytes = None
@@ -57,10 +63,12 @@ class TLSReceiver:
     passwd_attempts = 4
     BufferSize = 1024
 
-    def __init__(self, threadPoolExecutor: ThreadPoolExecutor, remoteAddress: str, localPort: int):
+    def __init__(self, threadPoolExecutor: ThreadPoolExecutor, remoteAddress: str, localPort: int, retreivalMode:bool = False, locationsList: list= None):
         self.remClientAddress = remoteAddress
         self.threadPoolExecutor = threadPoolExecutor
         self.localPort = localPort
+        self.retreivalMode = retreivalMode
+        self.locationsList = locationsList
 
         #Create directories to house the host identity, and remote public certs
         if not os.path.isdir('Identity'):
@@ -208,17 +216,45 @@ class TLSReceiver:
         symmkeyRemote = Fernet(symmkeyRemote)
         print(f"S: Recieved symmetric key from {self.remClientAddress[0]}")
 
-        print("S: recieving payload")
-        self.payload = io.BytesIO()
-        for _ in range(int(CHUNK_SIZE/TLS_MAX_SIZE)):
-            self.payload.write(self.remClientSocket.recv(TLS_MAX_SIZE))
         
-        # TODO: send authentic location
-        self.remClientSocket.send(bytes("C://Desktop//2433.jpg",'utf-8'))
+        if self.retreivalMode:
+            print("S: (RetrievalMode): sending locations list")
+            print("S: ",self.locationsList)
+            self.remClientSocket.send(pickle.dumps(self.locationList))
+
+        print("S: recieving payload")
+        self.receivePayload()
+
+
+        print("S: recieved", self.payload.getbuffer().nbytes)
+        if not self.retreivalMode:
+            locations= []
+            print("S: (not RetrievalMode): saving payload and sending locations of stored files")
+            for _ in range(self.localRedundancyCount):
+                fileName = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for i in range(10))
+                locations.append(f"C://Desktop//{fileName}.bin")
+                self.savePayload(f"C://Desktop//{fileName}.bin")
+
+            self.remClientSocket.send(pickle.dumps(locations))
+        
 
         # self.payload = self.payload.decode('utf8')
-        print("S: recieved", self.payload.getbuffer().nbytes)
         # self.sendSocket.send() TODO: send back loaction of the file
         self.remClientSocket.close()
         print("S: Closing sockets")
         return self.payload
+    
+    def savePayload(self, location):
+        with open("output.txt", "wb") as f:
+            self.payload.seek(0)
+            f.write(self.payload.getbuffer())
+
+    def receivePayload(self):
+        self.payload = io.BytesIO()
+        for _ in range(int(CHUNK_SIZE/TLS_MAX_SIZE)):
+            self.payload.write(self.remClientSocket.recv(TLS_MAX_SIZE))
+
+
+    def sendLocation(self):
+        location = self.clientSocket.recv(self.BufferSize)
+        return location.decode('utf8')
