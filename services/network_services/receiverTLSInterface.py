@@ -138,7 +138,7 @@ class TLSReceiver:
             self.remClientSocket, self.remClientAddress = serverSocket.accept() 
         except ConnectionAbortedError:
             print("S: Connection Cancelled, or timed out")
-            return 
+            return
         print("S: Connected to client addre:", self.remClientAddress)
         #If the remote connection was localhost (operation cancelled), exit the script
         if self.remClientAddress[0] == '127.0.0.1':
@@ -153,10 +153,10 @@ class TLSReceiver:
         print(f"S: Established connection from {self.remClientAddress[0]}")
 
         
-    #     self.threadPoolExecutor.submit(self.authenticateAndReveive, hostpassword, keypasswd)
-    #     # return future
+        future = self.threadPoolExecutor.submit(self.authenticateAndReveive, hostpassword, keypasswd)
+        return future
 
-    # def authenticateAndReveive(self, hostpassword, keyPasswd):
+    def authenticateAndReveive(self, hostpassword, keypasswd):
         print("S: Thread Spawned")
         #Generate keypair for password exchange
         # key = makeKey()
