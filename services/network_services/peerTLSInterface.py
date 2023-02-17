@@ -8,20 +8,17 @@
 
 #Items necessary to perform operations with private/public keys
 from concurrent.futures import ThreadPoolExecutor
-import io
 import pathlib
-import pickle
 import secrets
 import string
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
-from utils.constants import CHUNK_SIZE, TLS_MAX_SIZE
+from utils.constants import CHUNK_SIZE
 from utils.socket_util_functions import receiveLocationsList, receiveMsg, receivePayload, sendLocationsList
 from utils.tls_util_functions import *
 
 
 #Symmetric key generation
-import cryptography.fernet
 from cryptography.fernet import Fernet
 
 #Python server/client module, as well as ssl module to wrap the socket in TLS
@@ -39,7 +36,7 @@ except:
 import threading
 
 
-class RemoteTLSInterface:
+class PeerTLSInterface:
     # Local is SERVER here - Receiver
     # Remote is CLIENT here - Sender
     # As server(receiver) listens to client connections to receive data from clients(Sender)
@@ -51,7 +48,6 @@ class RemoteTLSInterface:
     remotePort: int = None
     remPublicKey = None
     timeout: int = 0
-    retrievalMode: bool = False
     localRedundancyCount = 2 # TODO
     locationsList: list = None
 
@@ -65,11 +61,10 @@ class RemoteTLSInterface:
     passwd_attempts = 4
     BufferSize = 1024
 
-    def __init__(self, threadPoolExecutor: ThreadPoolExecutor, remoteAddress: str, localPort: int, retrievalMode:bool = False, locationsList: list= None):
+    def __init__(self, threadPoolExecutor: ThreadPoolExecutor, remoteAddress: str, localPort: int, locationsList: list= None):
         self.remClientAddress = remoteAddress
         self.threadPoolExecutor = threadPoolExecutor
         self.localPort = localPort
-        self.retrievalMode = retrievalMode
         self.locationsList = locationsList
 
         #Create directories to house the host identity, and remote public certs

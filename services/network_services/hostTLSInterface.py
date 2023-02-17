@@ -8,15 +8,10 @@
 
 #Items necessary to perform operations with private/public keys
 from concurrent.futures import ThreadPoolExecutor
-import io
-import pathlib
-import pickle
-from utils.constants import CHUNK_SIZE, TLS_MAX_SIZE
 from utils.socket_util_functions import receiveLocationsList, receivePayload, sendLocationsList, sendMsg
 from utils.tls_util_functions import *
 
 #Symmetric key generation
-import cryptography.fernet
 from cryptography.fernet import Fernet
 
 #Python server/client module, as well as ssl module to wrap the socket in TLS
@@ -30,8 +25,6 @@ try:
 except:
     win=0
 
-#GUI inports
-# import tkinter as tk    #Standard python GUI library
 import re               #For user input validations
 
 #For managing the self-signed cert, and incoming public certificates
@@ -98,8 +91,8 @@ class HostTLSInterface:
         self.clientSocket = clientContext.wrap_socket(clientSocketI, server_hostname=self.remServerAddress)
         #Pass that socket up to the global scope pefore the therad ends, so that the main function can utilize it
         print(f"C: Connection established to remServerAddress:{self.remServerAddress}:{self.remotePort}")
-        self.remoteLocationFuture = self.threadPoolExecutor.submit(self.authenticateAndSend, remotepassword)
-        # print(fut.result())
+        future = self.threadPoolExecutor.submit(self.authenticateAndSend, remotepassword)
+        return future
 
     def authenticateAndSend(self, remotepassword):
         print("C: Thread Spawned")

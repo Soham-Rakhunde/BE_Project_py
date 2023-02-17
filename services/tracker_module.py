@@ -64,8 +64,7 @@ class Tracker:
                         # remotePort = self.peersList[peer_number]['ip'] TODO
                         remotePort = 11111 + peer_number
                     )
-                    sendHandler.connectToRemoteServer(remotepassword='P@ssw0rd')
-                    future = sendHandler.remoteLocationFuture
+                    future = sendHandler.connectToRemoteServer(remotepassword='P@ssw0rd')
                     futuresDict[future] = {
                         'id': chunk_id,
                         'hmac':  base64.b64encode(hmac).decode("ascii"),
