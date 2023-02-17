@@ -198,7 +198,7 @@ class HostTLSInterface:
             self.payload = receivePayload(socket=self.clientSocket)
             self.clientSocket.close()
             print("Sockets closed successfully")
-            return None
+            return "None"
         else:
             sendMsg(socket=self.clientSocket, msg="StorageMode")
             print("C: (not retrievalMode) Sending the Payload")
@@ -207,3 +207,4 @@ class HostTLSInterface:
             self.locationsList = receiveLocationsList(socket=self.clientSocket, BufferSize=self.BufferSize)
             print("C: (not retreivalMode) ", self.locationsList)
             return self.locationsList
+        # return self.locationsList

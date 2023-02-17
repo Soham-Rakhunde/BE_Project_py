@@ -8,9 +8,7 @@
 
 #Items necessary to perform operations with private/public keys
 from concurrent.futures import ThreadPoolExecutor
-import io
 import pathlib
-import pickle
 import secrets
 import string
 from cryptography.hazmat.backends import default_backend
@@ -21,7 +19,6 @@ from utils.tls_util_functions import *
 
 
 #Symmetric key generation
-import cryptography.fernet
 from cryptography.fernet import Fernet
 
 #Python server/client module, as well as ssl module to wrap the socket in TLS
@@ -39,7 +36,7 @@ except:
 import threading
 
 
-class RemoteTLSInterface:
+class PeerTLSInterface:
     # Local is SERVER here - Receiver
     # Remote is CLIENT here - Sender
     # As server(receiver) listens to client connections to receive data from clients(Sender)
@@ -163,10 +160,10 @@ class RemoteTLSInterface:
         print(f"S: Established connection from {self.remClientAddress[0]}")
 
         
-        self.payloadFuture = self.threadPoolExecutor.submit(self.authenticateAndReveive, hostpassword, keypasswd)
-
-    def authenticateAndReveive(self, hostpassword, keypasswd):
-        print("S: Thread Spawned")
+    #     self.payloadFuture = self.threadPoolExecutor.submit(self.authenticateAndReveive, hostpassword, keypasswd)
+    # commentng for testing receive functionality
+    # def authenticateAndReveive(self, hostpassword, keypasswd):
+        # print("S: Thread Spawned")
         #Generate keypair for password exchange
         # key = makeKey()
         key = retrieveKey(passwd=keypasswd)

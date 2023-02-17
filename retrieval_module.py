@@ -1,7 +1,7 @@
 import json
 from services.data_handler_module import DataHandler
 from services.encrypt_module import EncryptionService
-from services.network_services.remoteTLSInterface import RemoteTLSInterface
+from services.network_services.peerTLSInterface import PeerTLSInterface
 import concurrent.futures
 from collections import deque
 from services.network_services.peerTLSInterface import PeerTLSInterface
@@ -12,13 +12,13 @@ if __name__ == '__main__':
     
     buffers = dict()
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        for i in range(6):
+        for i in range(3):
             print("START", i)
             ob = PeerTLSInterface(threadPoolExecutor = executor, remoteAddress = '192.168.0.103', localPort= 11111+i)
-            # executor.submit(ob.connectToRemoteClient,keypasswd='G00dP@ssw0rd', hostpassword ='P@ssw0rd',remotepassword ='P@ssw0rd')
+            fut = executor.submit(ob.connectToRemoteClient,keypasswd='G00dP@ssw0rd', hostpassword ='P@ssw0rd',remotepassword ='P@ssw0rd')
             
-            fut = ob.connectToRemoteClient(keypasswd='G00dP@ssw0rd', hostpassword ='P@ssw0rd',remotepassword ='P@ssw0rd')
-            fut = ob.payloadFuture
+            # fut = ob.connectToRemoteClient(keypasswd='G00dP@ssw0rd', hostpassword ='P@ssw0rd',remotepassword ='P@ssw0rd')
+            # fut = ob.payloadFuture
             buffers[fut] = i
             print("LOOP", i)
 
@@ -75,7 +75,7 @@ class RetrieverModule:
                 curChunk = self.chunkQueue.popleft()
                 
                 print("Retriever: Retrieving chunk", curChunk['id'])
-                receiver = RemoteTLSInterface(threadPoolExecutor = executor, remoteAddress = curChunk['address'], localPort= 11111+curChunk['id']) #port change TODO
+                receiver = PeerTLSInterface(threadPoolExecutor = executor, remoteAddress = curChunk['address'], localPort= 11111+curChunk['id']) #port change TODO
                 fut = executor.submit(receiver.connectToRemoteClient,keypasswd='G00dP@ssw0rd', hostpassword ='P@ssw0rd',remotepassword ='P@ssw0rd')
                 
                 if fut != None:

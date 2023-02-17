@@ -15,11 +15,11 @@ class Tracker:
 
     peersList = [
         {'ip': '192.168.0.103', 'port':11111, 'mac':'44:AF:28:F2:EB:3A'},
-        {'ip': '192.168.0.103', 'port':11111, 'mac':'44:AF:28:F2:EB:3A'},
-        {'ip': '192.168.0.103', 'port':11111, 'mac':'44:AF:28:F2:EB:3A'},
-        {'ip': '192.168.0.103', 'port':11111, 'mac':'44:AF:28:F2:EB:3A'},
-        {'ip': '192.168.0.103', 'port':11111, 'mac':'44:AF:28:F2:EB:3A'},
-        {'ip': '192.168.0.103', 'port':11111, 'mac':'44:AF:28:F2:EB:3A'}
+        {'ip': '192.168.0.103', 'port':11112, 'mac':'44:AF:28:F2:EB:3A'},
+        {'ip': '192.168.0.103', 'port':11113, 'mac':'44:AF:28:F2:EB:3A'},
+        {'ip': '192.168.0.103', 'port':11114, 'mac':'44:AF:28:F2:EB:3A'},
+        {'ip': '192.168.0.103', 'port':11115, 'mac':'44:AF:28:F2:EB:3A'},
+        {'ip': '192.168.0.103', 'port':11116, 'mac':'44:AF:28:F2:EB:3A'}
     ]
 
 
@@ -34,8 +34,8 @@ class Tracker:
         self.num_of_chunks = self.bufferObj.getbuffer().nbytes
 
         # TODO: Input redundancy ratio
-        self.nodes_redundancy_ratio = 2
-        self.nodewise_redundancy_ratio = 2
+        self.nodes_redundancy_ratio = 1
+        self.nodewise_redundancy_ratio = 1
         
         print("Chunks in nums ",int(self.num_of_chunks / CHUNK_SIZE))
 
@@ -83,7 +83,7 @@ class Tracker:
         trackerJSON['chunk_count'] = self.num_of_chunks
         trackerJSON['chunks'] = []
 
-        print(next(filter(lambda chunk: chunk['id'] == futuresDict[fut]['id'], trackerJSON)))
+        # print(next(filter(lambda chunk: chunk['id'] == futuresDict[fut]['id'], trackerJSON['chunks'])))
 
 
         for fut in concurrent.futures.as_completed(futuresDict): 
