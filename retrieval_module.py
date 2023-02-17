@@ -1,13 +1,13 @@
 import json
 from services.data_handler_module import DataHandler
 from services.encrypt_module import EncryptionService
-from services.network_services.hostTLSInterface import HostTLSInterface
+from services.network_services.remoteTLSInterface import RemoteTLSInterface
 import concurrent.futures
 from collections import deque
 from services.partitioning_module import Partitioner
 from utils.constants import CHUNK_SIZE
 
-class RetrieverModule:
+class Retriever:
     def __init__(self, tracker_path):
         self.tracker_path = tracker_path
 
@@ -48,15 +48,8 @@ class RetrieverModule:
                 curChunk = self.chunkQueue.popleft()
                 
                 print("Retriever: Retrieving chunk", curChunk['id'])
-                receiver = HostTLSInterface(
-                    threadPoolExecutor = executor, 
-                    remoteAddress = curChunk['address'], 
-                    remotePort = 11111+curChunk['id'], #port change TODO
-                    retrievalMode = True,
-                    locationsList = curChunk['locations']
-                ) 
-                fut = receiver.connectToRemoteServer(remotepassword='P@ssw0rd')
-                # fut = executor.submit(receiver.connectToRemoteServer, remotepassword ='P@ssw0rd')
+                receiver = RemoteTLSInterface(threadPoolExecutor = executor, remoteAddress = curChunk['address'], localPort= 11111+curChunk['id']) #port change TODO
+                fut = executor.submit(receiver.connectToRemoteClient,keypasswd='G00dP@ssw0rd', hostpassword ='P@ssw0rd',remotepassword ='P@ssw0rd')
                 
                 if fut != None:
                     self.buffers[fut] = curChunk['id']
