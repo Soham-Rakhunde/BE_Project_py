@@ -245,7 +245,8 @@ class PeerTLSInterface:
         # self.payload = self.payload.decode('utf8')
         # self.sendSocket.send() TODO: send back loaction of the file
         self.remClientSocket.close()
-        print("S: Closing sockets")
+        print("S: Closing sockets", type(self.payload))
+        # return "DONE payload"
         return self.payload
     
     def savePayload(self, location):

@@ -24,7 +24,7 @@ class Partitioner:
         sorted_buffers = sorted(bufferDictionary.items(), key=lambda x: x[1])
 
         sorted_buffers = [b[0].result() for b in sorted_buffers]
-        pprint.pprint(sorted_buffers)
+        # pprint.pprint(sorted_buffers)
 
 
         buffer = io.BytesIO()

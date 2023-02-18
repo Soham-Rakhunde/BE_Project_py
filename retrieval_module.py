@@ -1,6 +1,8 @@
+import base64
 import json
 from services.data_handler_module import DataHandler
 from services.encrypt_module import EncryptionService
+from services.hmac_module import HMAC_Module
 from services.network_services.hostTLSInterface import HostTLSInterface
 import concurrent.futures
 from collections import deque
@@ -13,6 +15,7 @@ class RetrieverModule:
         self.tracker_path = tracker_path
 
     def retrieve(self):
+        self.portadd = 0
         try:
             with open(self.tracker_path, 'r') as openfile:
                 self.trackerJSON = json.load(openfile)
@@ -53,10 +56,12 @@ class RetrieverModule:
                 receiver = HostTLSInterface(
                     threadPoolExecutor = executor, 
                     remoteAddress = curChunk['address'], 
-                    remotePort= 11111+curChunk['id'],
+                    remotePort= 11111+self.portadd,
+                    # remotePort= 11111+curChunk['id'],
                     retrievalMode= True,
                     locationsList=curChunk['locations']
                 ) #port change TODO
+                self.portadd +=1
                 fut = executor.submit(receiver.connectToRemoteServer, remotepassword ='P@ssw0rd')
                 
                 if fut != None:
@@ -81,6 +86,7 @@ class RetrieverModule:
             curChunkId = self.buffers[fut]
             print(curChunkId, "Donee")
             if fut.result().getbuffer().nbytes != CHUNK_SIZE:
+                self.chunkTryIndex[curChunkId] += 1
                 chunkTrackerEntry = next(filter(lambda chunk: chunk['id'] == curChunkId, self.trackerJSON['chunks']))
                 if(self.chunkTryIndex[curChunkId] >= len(chunkTrackerEntry['peers'])):
                     print("Retriever: No active peers for chunk", curChunkId)
@@ -91,5 +97,26 @@ class RetrieverModule:
 
                 self.buffers.pop(fut)
             else:
+                curChunkId = self.buffers[fut]
                 print("Retriever: Successfully retrieved chunk", curChunkId)
+                chunkTrackerEntry = next(filter(lambda chunk: chunk['id'] == curChunkId, self.trackerJSON['chunks']))
+                chunk_data = fut.result().getvalue()
+                valid = HMAC_Module.verifyHMAC(
+                    msg=chunk_data,
+                    hmac=chunkTrackerEntry['hmac']
+                )
+                if valid:
+                    print("HMAC Checker: Succesfully verified the chunk for integrity and authenticity for chunk", curChunkId)
+                else:
+                    print("HMAC Checker: The data is corrupted or wrong key provided for chunk", curChunkId)
+                    self.chunkTryIndex[curChunkId] += 1
+                    if(self.chunkTryIndex[curChunkId] >= len(chunkTrackerEntry['peers'])):
+                        print("Retriever: No active peers for chunk", curChunkId)
+                        return
+                    nexChunk = chunkTrackerEntry['peers'][self.chunkTryIndex[curChunkId]]
+                    self.chunkQueue.append(nexChunk | {'id': chunkTrackerEntry['id']}) # add the chunk id for easier reference   
+                    print("Retriever: Rescheduling chunk", curChunk['id'], ' try-',1+self.chunkTryIndex[curChunk['id']])
+                    self.buffers.pop(fut)
+
+           
             # print(self.buffers[fut], fut.result().getbuffer().nbytes, fut.result(), type(fut.result().getbuffer()))

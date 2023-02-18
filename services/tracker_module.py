@@ -1,6 +1,4 @@
-import base64
 import io, json
-import pprint
 import concurrent.futures
 
 from utils.constants import *
@@ -35,8 +33,8 @@ class Tracker:
         self.num_of_chunks = int(self.totalSize / CHUNK_SIZE)
 
         # TODO: Input redundancy ratio
-        self.nodes_redundancy_ratio = 1
-        self.nodewise_redundancy_ratio = 1
+        self.nodes_redundancy_ratio = 2
+        self.nodewise_redundancy_ratio = 2
         
         print("Chunks in nums ",self.num_of_chunks)
 
@@ -51,7 +49,7 @@ class Tracker:
                 print("CHUNK", chunk_id)
                 chunk = self.bufferObj.read(CHUNK_SIZE)
                 hmac = HMAC_Module.generateHMAC(chunk) # TODO: save HMAC in traceker file
-
+                # print('wwww' ,HMAC_Module.verifyHMAC(chunk, hmac))
                 #iterate for redundancy over multiple peers
                 for peer_number in range(chunk_id*self.nodes_redundancy_ratio, 
                                self.nodes_redundancy_ratio*(chunk_id+1)):
@@ -72,7 +70,7 @@ class Tracker:
                     print("BLOJ ", peer_number)
                     futuresDict[future] = {
                         'id': chunk_id,
-                        'hmac':  base64.b64encode(hmac).decode("ascii"),
+                        'hmac':  hmac, 
                         'address': self.peersList[peer_number]['ip'],
                         'mac_addr': self.peersList[peer_number]['mac']
                     }
