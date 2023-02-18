@@ -30,7 +30,7 @@ class RetrieverModule:
         # here key is the chunk id and value is the index of the peer of that chunk['peers]list
 
         for chunk in self.trackerJSON['chunks']:
-            self.chunkQueue.append(chunk['peers'][0] | {'id': chunk['id']}) # add the chunk id for easier reference
+            self.chunkQueue.append(chunk['peers'][0] | {'id': chunk['id'], 'hmac': chunk['hmac']}) # add the chunk id for easier reference
             self.chunkTryIndex[chunk['id']] = 0
 
         self.buffers = dict()
@@ -59,7 +59,8 @@ class RetrieverModule:
                     remotePort= 11111+self.portadd,
                     # remotePort= 11111+curChunk['id'],
                     retrievalMode= True,
-                    locationsList=curChunk['locations']
+                    locationsList=curChunk['locations'],
+                    hmac=curChunk['hmac']
                 ) #port change TODO
                 self.portadd +=1
                 fut = executor.submit(receiver.connectToRemoteServer, remotepassword ='P@ssw0rd')
@@ -79,7 +80,7 @@ class RetrieverModule:
                         return
                     nexChunk = chunkTrackerEntry['peers'][self.chunkTryIndex[curChunk['id']]]
                     print("Retriever: Peer not connected, Rescheduling chunk", curChunk['id'], ' try-',1+self.chunkTryIndex[curChunk['id']])
-                    self.chunkQueue.append(nexChunk | {'id': chunkTrackerEntry['id']}) # add the chunk id for easier reference
+                    self.chunkQueue.append(nexChunk | {'id': chunkTrackerEntry['id'], 'hmac': chunkTrackerEntry['hmac']}) # add the chunk id for easier reference
 
         for fut in concurrent.futures.as_completed(self.buffers):
             # If data isnt found at peer
@@ -92,31 +93,32 @@ class RetrieverModule:
                     print("Retriever: No active peers for chunk", curChunkId)
                     return
                 nexChunk = chunkTrackerEntry['peers'][self.chunkTryIndex[curChunkId]]
-                self.chunkQueue.append(nexChunk | {'id': chunkTrackerEntry['id']}) # add the chunk id for easier reference   
+                self.chunkQueue.append(nexChunk | {'id': chunkTrackerEntry['id'], 'hmac': chunkTrackerEntry['hmac']}) # add the chunk id for easier reference   
                 print("Retriever: Data not found at Peer, Rescheduling chunk", curChunk['id'], ' try-',1+self.chunkTryIndex[curChunk['id']])
 
                 self.buffers.pop(fut)
             else:
                 curChunkId = self.buffers[fut]
                 print("Retriever: Successfully retrieved chunk", curChunkId)
-                chunkTrackerEntry = next(filter(lambda chunk: chunk['id'] == curChunkId, self.trackerJSON['chunks']))
-                chunk_data = fut.result().getvalue()
-                valid = HMAC_Module.verifyHMAC(
-                    msg=chunk_data,
-                    hmac=chunkTrackerEntry['hmac']
-                )
-                if valid:
-                    print("HMAC Checker: Succesfully verified the chunk for integrity and authenticity for chunk", curChunkId)
-                else:
-                    print("HMAC Checker: The data is corrupted or wrong key provided for chunk", curChunkId)
-                    self.chunkTryIndex[curChunkId] += 1
-                    if(self.chunkTryIndex[curChunkId] >= len(chunkTrackerEntry['peers'])):
-                        print("Retriever: No active peers for chunk", curChunkId)
-                        return
-                    nexChunk = chunkTrackerEntry['peers'][self.chunkTryIndex[curChunkId]]
-                    self.chunkQueue.append(nexChunk | {'id': chunkTrackerEntry['id']}) # add the chunk id for easier reference   
-                    print("Retriever: Rescheduling chunk", curChunk['id'], ' try-',1+self.chunkTryIndex[curChunk['id']])
-                    self.buffers.pop(fut)
+                # already handled inside hosttls interface
+                # chunkTrackerEntry = next(filter(lambda chunk: chunk['id'] == curChunkId, self.trackerJSON['chunks']))
+                # chunk_data = fut.result().getvalue()
+                # valid = HMAC_Module.verifyHMAC(
+                #     msg=chunk_data,
+                #     hmac=chunkTrackerEntry['hmac']
+                # )
+                # if valid:
+                #     print("HMAC Checker: Succesfully verified the chunk for integrity and authenticity for chunk", curChunkId)
+                # else:
+                #     print("HMAC Checker: The data is corrupted or wrong key provided for chunk", curChunkId)
+                #     self.chunkTryIndex[curChunkId] += 1
+                #     if(self.chunkTryIndex[curChunkId] >= len(chunkTrackerEntry['peers'])):
+                #         print("Retriever: No active peers for chunk", curChunkId)
+                #         return
+                #     nexChunk = chunkTrackerEntry['peers'][self.chunkTryIndex[curChunkId]]
+                #     self.chunkQueue.append(nexChunk | {'id': chunkTrackerEntry['id'], 'hmac': chunkTrackerEntry['hmac']}) # add the chunk id for easier reference   
+                #     print("Retriever: Rescheduling chunk", curChunk['id'], ' try-',1+self.chunkTryIndex[curChunk['id']])
+                #     self.buffers.pop(fut)
 
            
             # print(self.buffers[fut], fut.result().getbuffer().nbytes, fut.result(), type(fut.result().getbuffer()))

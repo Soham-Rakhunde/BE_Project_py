@@ -219,14 +219,23 @@ class PeerTLSInterface:
         if mode == "RetrievalMode":
             print("S: (retrievalMode): receiving locations to send them and load in memory")
             locations = receiveLocationsList(socket=self.remClientSocket, BufferSize=self.BufferSize)
-            self.loadDataFromStorage(locationList=locations)
-            if self.payload == None:
-                "S: (retrievalMode) Data not found, exiting..."
-                self.remClientSocket.close()
-                return
             
-            "S: (retrievalMode) Sending the Payload"
-            self.remClientSocket.send(self.payload)
+            locationIndex = 0
+            
+            while locationIndex < len(locations): # If HMAC is incorrect then they can retry
+                self.loadDataFromStorage(searchFromIndex=locationIndex, locationList=locations)
+                if self.payload == None:
+                    "S: (retrievalMode) Data not found, exiting..."
+                    self.remClientSocket.close()
+                    return
+                
+                "S: (retrievalMode) Sending the Payload"
+                self.remClientSocket.send(self.payload)
+                msg = receiveMsg(socket=self.remClientSocket, BufferSize=self.BufferSize)
+                if msg == "END":
+                    break
+                else:
+                    locationIndex = max(locationIndex, int(msg))
 
         elif mode == "StorageMode":
             self.payload = receivePayload(socket=self.remClientSocket)
@@ -241,11 +250,11 @@ class PeerTLSInterface:
             sendLocationsList(socket=self.remClientSocket, locationList=locations)
         else:
             print("S: unknown mode received: ", mode)
-
-        # self.payload = self.payload.decode('utf8')
-        # self.sendSocket.send() TODO: send back loaction of the file
+            self.remClientSocket.close()
+            return
+        
+        print("S: Transaction complete, Ending connection")
         self.remClientSocket.close()
-        print("S: Closing sockets", type(self.payload))
         # return "DONE payload"
         return self.payload
     
@@ -255,12 +264,15 @@ class PeerTLSInterface:
             f.write(self.payload.getbuffer())
     
 
-    def loadDataFromStorage(self, locationList):
+    def loadDataFromStorage(self, searchFromIndex, locationList):
         print("LocationList:", locationList)
-        for path in locationList:
+        for path in locationList[searchFromIndex:]:
             my_file = pathlib.Path(path)
             if my_file.is_file():
                 with open(path, "rb") as f:
                     self.payload = f.read()
                     if(len(self.payload) == CHUNK_SIZE):
+                        print(f"S: data found at {path}")
                         return
+                    else:
+                        print(f"S: data at {path} is corrupted, retrying...")
