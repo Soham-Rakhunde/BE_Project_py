@@ -31,13 +31,14 @@ class Tracker:
 
     def send_chunks(self, _dataHandler):
         self.bufferObj.seek(0)
-        self.num_of_chunks = self.bufferObj.getbuffer().nbytes
+        self.totalSize = self.bufferObj.getbuffer().nbytes
+        self.num_of_chunks = int(self.totalSize / CHUNK_SIZE)
 
         # TODO: Input redundancy ratio
         self.nodes_redundancy_ratio = 1
         self.nodewise_redundancy_ratio = 1
         
-        print("Chunks in nums ",int(self.num_of_chunks / CHUNK_SIZE))
+        print("Chunks in nums ",self.num_of_chunks)
 
         # while self.is_compatible_reduncancy_ratio():
         # TODO input new redundancy ratio
@@ -46,14 +47,16 @@ class Tracker:
         with concurrent.futures.ThreadPoolExecutor() as executor:
 
             # iterate each chunk
-            for chunk_id in range(int(self.num_of_chunks / CHUNK_SIZE)):
+            for chunk_id in range(self.num_of_chunks):
                 print("CHUNK", chunk_id)
                 chunk = self.bufferObj.read(CHUNK_SIZE)
                 hmac = HMAC_Module.generateHMAC(chunk) # TODO: save HMAC in traceker file
 
                 #iterate for redundancy over multiple peers
-                for j in range(self.nodes_redundancy_ratio):
-                    peer_number = chunk_id*(j+1)
+                for peer_number in range(chunk_id*self.nodes_redundancy_ratio, 
+                               self.nodes_redundancy_ratio*(chunk_id+1)):
+                    # peer_number = int(self.num_of_chunks / CHUNK_SIZE)*(chunk_id) +j
+                    # print("ZZ, ",chunk_id, j, peer_number)
                     print("Tracker: Initaiting with peernumber", peer_number)
                     sendHandler = HostTLSInterface(
                         payload= chunk, 
@@ -62,8 +65,10 @@ class Tracker:
                         # remotePort = self.peersList[peer_number]['ip'] TODO
                         remotePort = 11111 + peer_number
                     )
-                    sendHandler.connectToRemoteServer(remotepassword='P@ssw0rd')
-                    future = sendHandler.locationFuture
+                    future = executor.submit(sendHandler.connectToRemoteServer, remotepassword ='P@ssw0rd')
+                
+                    # sendHandler.connectToRemoteServer(remotepassword='P@ssw0rd')
+                    # future = sendHandler.locationFuture
                     print("BLOJ ", peer_number)
                     futuresDict[future] = {
                         'id': chunk_id,
@@ -94,7 +99,7 @@ class Tracker:
                 chunkTrackerEntry['peers'].append({
                     'address': futuresDict[fut]['address'],
                     'mac-addr': futuresDict[fut]['mac_addr'],
-                    'locations': [fut.result()]
+                    'locations': fut.result()
                 })
             except: #else create new entry
                 trackerJSON['chunks'].append({
@@ -103,7 +108,7 @@ class Tracker:
                     'peers': [{
                         'address': futuresDict[fut]['address'],
                         'mac-addr': futuresDict[fut]['mac_addr'],
-                        'locations': [fut.result()]
+                        'locations': fut.result()
                     }]
             })
 

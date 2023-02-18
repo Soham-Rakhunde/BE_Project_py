@@ -255,6 +255,7 @@ class PeerTLSInterface:
     
 
     def loadDataFromStorage(self, locationList):
+        print("LocationList:", locationList)
         for path in locationList:
             my_file = pathlib.Path(path)
             if my_file.is_file():

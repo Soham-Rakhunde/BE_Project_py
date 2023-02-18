@@ -98,9 +98,9 @@ class HostTLSInterface:
         self.clientSocket = clientContext.wrap_socket(clientSocketI, server_hostname=self.remServerAddress)
         #Pass that socket up to the global scope pefore the therad ends, so that the main function can utilize it
         print(f"C: Connection established to remServerAddress:{self.remServerAddress}:{self.remotePort}")
-        self.locationFuture = self.threadPoolExecutor.submit(self.authenticateAndSend, remotepassword)
+    #     self.locationFuture = self.threadPoolExecutor.submit(self.authenticateAndSend, remotepassword)
 
-    def authenticateAndSend(self, remotepassword):
+    # def authenticateAndSend(self, remotepassword):
         print("C: Thread Spawned")
         #Get remote address and certificate to validate if a cert is good or not
         raddr = self.clientSocket.getpeername()[0]
@@ -198,7 +198,7 @@ class HostTLSInterface:
             self.payload = receivePayload(socket=self.clientSocket)
             self.clientSocket.close()
             print("Sockets closed successfully")
-            return "None"
+            return self.payload
         else:
             sendMsg(socket=self.clientSocket, msg="StorageMode")
             print("C: (not retrievalMode) Sending the Payload")
