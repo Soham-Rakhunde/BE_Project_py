@@ -19,31 +19,44 @@ class DiscoveryServerInterface:
             self.clientMultiSocket.connect((self.server_ip, self.server_port))
         except socket.error as e:
             print(str(e))
-        res = self.clientMultiSocket.recv(1024)
-        print(res.decode('utf-8'))
+        else:
+            res = self.clientMultiSocket.recv(1024)
+            print(res.decode('utf-8'))
 
-        d_data = {'ip': self.external_ip, 'port':self.localPort, 'mac':self.mac_address}
-        data = json.dumps(d_data)
-        self.clientMultiSocket.sendall(bytes(data,encoding="utf-8"))
-        print("Discovery: Discovery Server Connected")
+            d_data = {'ip': self.external_ip, 'port':self.localPort, 'mac':self.mac_address}
+            data = json.dumps(d_data)
+            self.clientMultiSocket.sendall(bytes(data,encoding="utf-8"))
+            print("Discovery: Discovery Server Connected")
 
     def retrieve_peers(self):
-        self.clientMultiSocket.send(str.encode('1'))
-        res = self.clientMultiSocket.recv(1024)
-        res = res.decode('utf-8')
-        res = json.loads(res)
-        self.peersList = res
-        return res
+        try:
+            self.clientMultiSocket.send(str.encode('1'))
+        except OSError as e:
+            print(e)
+        except:
+            print("Error occured")
+        else:   
+            res = self.clientMultiSocket.recv(1024)
+            res = res.decode('utf-8')
+            res = json.loads(res)
+            self.peersList = res
+            return res
 
     def retreive_known_peers(self):
-        d_data = [self.mac_address]
-        data = json.dumps(d_data)
-        self.clientMultiSocket.sendall(str.encode(data))
-        res = self.clientMultiSocket.recv(1024)
-        res = res.decode('utf-8')
-        res = json.loads(res)
-        self.peersList = res
-        return res
+        try:
+            d_data = [self.mac_address]
+            data = json.dumps(d_data)
+            self.clientMultiSocket.sendall(str.encode(data))
+        except OSError as e:
+            print(e)
+        except:
+            print("Error occured")
+        else:   
+            res = self.clientMultiSocket.recv(1024)
+            res = res.decode('utf-8')
+            res = json.loads(res)
+            self.peersList = res
+            return res
 
     def __del__(self):
         self.clientMultiSocket.close()
