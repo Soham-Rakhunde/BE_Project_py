@@ -69,6 +69,9 @@ class KeyHandlerUI(metaclass=SingletonMeta):
 
     
     def is_password_created(self):
+        if not os.path.isdir('Identity'):
+            os.mkdir('Identity')   
+        print( os.path.exists(self.path))
         return os.path.exists(self.path)
 
     def generate(self, password: str):
@@ -81,11 +84,13 @@ class KeyHandlerUI(metaclass=SingletonMeta):
 # TODO remove key and ask password everytime to derive the key
 
     def save(self):
+        if not os.path.isdir('Identity'):
+            os.mkdir('Identity')    
         with open(self.path, 'wb') as file:
             file.write(self.salt)
 
     def retrieve(self, password:str):
         with open(self.path, 'rb') as file:
             self.salt = file.read(64)
-            self.salt = str(b64encode(self.salt))
+            # self.salt = str(b64encode(self.salt))
             self.key = pyargon2.hash(password, str(b64encode(self.salt)), hash_len=self.KEY_SIZE, encoding='raw')

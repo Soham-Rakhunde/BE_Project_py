@@ -6,7 +6,6 @@ from services.network_services.peerTLSInterface import PeerTLSInterface
 from services.partitioning_module import Partitioner
 
 if __name__ == '__main__':
-    
     buffers = dict()
     with concurrent.futures.ThreadPoolExecutor() as executor:
         for i in range(7):
