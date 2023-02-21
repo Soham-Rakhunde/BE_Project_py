@@ -4,22 +4,30 @@ import gradio as gr
 from printer import Printer
 from key_handling_module import KeyHandlerUI
 
-# def wer_help():
-#     p = Printer()
-#     for i in range(15):
-#         p.write(name=f"{i%4 +1}", msg=str(i))
-#         time.sleep(0.4)
+def wer_help():
+    p = Printer()
+    for i in range(15):
+        p.write(name=f"{i%4 +1}", msg=str(i))
+        time.sleep(0.4)
 
+
+def terminalUI():
+    gr.HTML(value=pr.getHTML, label="Terminal", every = 1)
+    btsn = gr.Button("Run")
+    btsn.click(fn=wer_help)
+
+
+def mainTabs():
+    with gr.Box(visible= False) as tabBox:
+        with gr.Tabs():
+            pass
+    return tabBox
 
 pr = Printer()
-with gr.Blocks(css='main.css') as demo:
-    gr.Markdown(
-    """
-    # Secure data storage and hiding
-    Enter the Passphrase of Keystore
-    """)
-
+def passwordPage():
     keyHandler = KeyHandlerUI()
+
+    tabBox = mainTabs()
     if keyHandler.is_password_created():
         password = gr.Textbox(label="Keystore Passphrase", placeholder='Enter keystore Passphrase')
         btn = gr.Button(value="Submit")
@@ -27,9 +35,9 @@ with gr.Blocks(css='main.css') as demo:
 
         def retrieve_key(passwd):
             keyHandler.retrieve(password=passwd)
-            return [btn.update(visible=False), password.update(visible=False)]
+            return [btn.update(visible=False), password.update(visible=False), tabBox.update(visible=True)]
 
-        btn.click(retrieve_key, inputs=password, outputs=[btn, password])
+        btn.click(retrieve_key, inputs=password, outputs=[btn, password, tabBox])
     else:
         with gr.Row():
             password = gr.Textbox(label="Keystore Passphrase", placeholder='Enter new Passphrase')
@@ -49,21 +57,29 @@ with gr.Blocks(css='main.css') as demo:
         def password_generate(passwd):
             keyHandler.generate(password=passwd)
             keyHandler.save()
-            return [password.update(visible=False), confirmPassword.update(visible=False), btn.update(visible=False)]
+            return [password.update(visible=False), confirmPassword.update(visible=False), btn.update(visible=False), tabBox.update(visible=True)]
 
-        btn.click(password_generate, inputs= password, outputs=[password, confirmPassword, btn])
+        btn.click(password_generate, inputs= password, outputs=[password, confirmPassword, btn, tabBox])
+
+        
 
 
+# def main_tabs():
+#     with gr.Box(visible= False):
 
+with gr.Blocks(css='main.css') as demo:
+    gr.Markdown(
+    """
+    # Secure data storage and hiding
+    """)
+    # passwordPage()
+    mainTabs()
+    # terminalUI()
 
-    # gr.HTML(value=pr.getHTML, label="Terminal", every = 1)
-    # # btn = gr.Button("show output")
-    # # btn.click(fn=pr.eventLoop, outputs=out)
-    # btsn = gr.Button("Run")
-    # btsn.click(fn=wer_help)
 # demo.queue()
 
 
+demo.queue()
 
 
 if __name__ == '__main__':
