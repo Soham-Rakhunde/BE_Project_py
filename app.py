@@ -1,6 +1,7 @@
 import time
 import gradio as gr
 from peer_discovery.discoveryServiceInterface import DiscoveryServiceInterface
+from services.network_services.peerTLSInterface import PeerTLSInterface
 
 from ui.printer import Printer
 from services.key_handling_module import KeyHandlerUI
@@ -19,14 +20,19 @@ invisibleBox = None
 def wer_help():
     p = Printer()
     for i in range(15):
-        p.write(name=f"{i%4 +1}", msg=str(i))
+        p.write2(name=f"{i%4 +1}", msg=str(i))
         time.sleep(0.4)
 
 
 def terminalUI():
     gr.HTML(value=pr.getHTML, label="Terminal", every = 1)
     btsn = gr.Button("Run")
-    btsn.click(fn=wer_help, show_progress=False)
+    DiscoveryServiceInterface()
+    ob = PeerTLSInterface(remoteAddress = '192.168.0.103', localPort= 11111)
+    # fut = executor.submit(ob.connectToRemoteClient,keypasswd='G00dP@ssw0rd', hostpassword ='P@ssw0rd',remotepassword ='P@ssw0rd')
+    def callFunc():
+        ob.connectToRemoteClient(keypasswd='G00dP@ssw0rd', hostpassword ='P@ssw0rd',remotepassword ='P@ssw0rd')
+    btsn.click(fn=callFunc)
 
 def upload_file(files):
     file_paths = [file.name for file in files]

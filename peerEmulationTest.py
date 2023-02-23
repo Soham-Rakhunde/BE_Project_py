@@ -9,14 +9,14 @@ if __name__ == '__main__':
     buffers = dict()
     with concurrent.futures.ThreadPoolExecutor() as executor:
         for i in range(7):
-            print("START", i)
+            # print("START", i)
             ob = PeerTLSInterface(threadPoolExecutor = executor, remoteAddress = '192.168.0.103', localPort= 11111+i)
             fut = executor.submit(ob.connectToRemoteClient,keypasswd='G00dP@ssw0rd', hostpassword ='P@ssw0rd',remotepassword ='P@ssw0rd')
             
             # fut = ob.connectToRemoteClient(keypasswd='G00dP@ssw0rd', hostpassword ='P@ssw0rd',remotepassword ='P@ssw0rd')
             # fut = ob.payloadFuture
             buffers[fut] = i
-            print("LOOP", i)
+            # print("LOOP", i)
 
 
     for fut in concurrent.futures.as_completed(buffers):

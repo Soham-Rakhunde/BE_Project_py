@@ -14,6 +14,7 @@ import secrets
 import string
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
+from ui.printer import Printer
 from utils.constants import CHUNK_SIZE, TLS_MAX_SIZE
 from utils.socket_util_functions import receiveLocationsList, receiveMsg, receivePayload, sendLocationsList
 from utils.tls_util_functions import *
@@ -63,12 +64,17 @@ class PeerTLSInterface:
     passwd_attempts = 4
     BufferSize = 1024
 
-    def __init__(self, threadPoolExecutor: ThreadPoolExecutor, remoteAddress: str, localPort: int, retrievalMode:bool = False, locationsList: list= None):
+    
+
+    def __init__(self, remoteAddress: str, localPort: int, retrievalMode:bool = False, threadPoolExecutor: ThreadPoolExecutor = None, locationsList: list= None):
         self.remClientAddress = remoteAddress
         self.threadPoolExecutor = threadPoolExecutor
         self.localPort = localPort
         self.retrievalMode = retrievalMode
         self.locationsList = locationsList
+        
+            
+        self.printer = Printer()
 
         #Create directories to house the host identity, and remote public certs
         if not os.path.isdir('Identity'):
@@ -107,6 +113,7 @@ class PeerTLSInterface:
             serverSocket.bind(('0.0.0.0',self.localPort))
         except OSError:
             print("S: Likely serverPort already in use (Linux has a brief timeout between runs)")
+            self.printer.write(name='S', msg='Likely serverPort already in use (Linux has a brief timeout between runs)')
             return
         serverSocket.settimeout(None)
 
@@ -138,6 +145,7 @@ class PeerTLSInterface:
         quitT.start()
 
         print(f"S: Listening on LocalServerPort {self.localPort} (Press Enter to exit)...")
+        self.printer.write(name='S', msg=f"Listening on LocalServerPort {self.localPort} (Press Enter to exit)...")
 
         #Start listening for connection
         serverSocket.listen(1)
@@ -146,19 +154,24 @@ class PeerTLSInterface:
             self.remClientSocket, self.remClientAddress = serverSocket.accept() 
         except ConnectionAbortedError:
             print("S: Connection Cancelled, or timed out")
+            self.printer.write(name='S', msg="Connection Cancelled, or timed out")
             return
-        print("S: Connected to client addre:", self.remClientAddress)
+        print("S: Connected to client address:", self.remClientAddress)
+        self.printer.write(name='S', msg=f"Connected to client address: {self.remClientAddress}")
         #If the remote connection was localhost (operation cancelled), exit the script
         if self.remClientAddress[0] == '127.0.0.1':
             serverSocket.close()
             print("S: Connection Cancelled, or timed out")
+            self.printer.write(name='S', msg=f"Connection Cancelled, or timed out")
             return
         if self.remClientAddress[0] != remoteAddress:
             serverSocket.close()
             print(f"S: Connection recieved from unexpected host ({self.remClientAddress[0]})")
+            self.printer.write(name='S', msg=f"Connection recieved from unexpected host ({self.remClientAddress[0]})")
             return
 
         print(f"S: Established connection from {self.remClientAddress[0]}")
+        self.printer.write(name='S', msg=f"Established connection from {self.remClientAddress[0]}")
 
         
     #     self.payloadFuture = self.threadPoolExecutor.submit(self.authenticateAndReveive, hostpassword, keypasswd)
@@ -169,6 +182,8 @@ class PeerTLSInterface:
         # key = makeKey()
         key = retrieveKey(passwd=keypasswd)
         print("S: Retrieved Keypair")
+        self.printer.write(name='S', msg=f"Retrieved Keypair")
+
 
         #Hash the passwords before sending them over the wire
         h = hashes.Hash(self.passwd_hashingAlgorithm,backend=default_backend())
@@ -181,6 +196,7 @@ class PeerTLSInterface:
         #Send the other node the public key, then wait for password attempt
         self.remClientSocket.send(pubString(key['public']))
         print(f"S: Sent public key to {self.remClientAddress[0]}")
+        self.printer.write(name='S', msg=f"Sent public key to {self.remClientAddress[0]}")
 
         #If the password matches, send a Granted message. Else send denied
         attempts = 0
@@ -193,17 +209,21 @@ class PeerTLSInterface:
                 if decrypt(key['private'],passAttempt) == hostPasswordHash:
                     self.remClientSocket.send(bytes("Granted",'utf8'))
                     print(f"S: Password match from {self.remClientAddress[0]}")
+                    self.printer.write(name='S', msg=f"Password match from {self.remClientAddress[0]}")
                     break
                 else:
                     self.remClientSocket.send(bytes("Denied",'utf8'))
                     print(f"S: Password failed attempt from {self.remClientAddress[0]}")
+                    self.printer.write(name='S', msg=f"Password failed attempt from {self.remClientAddress[0]}")
                     attempts += 1
             except:
                 print(f"S: {self.remClientAddress[0]} Left during password authentication")
+                self.printer.write(name='S', msg=f"{self.remClientAddress[0]} Left during password authentication")
                 return
 
         if attempts == self.passwd_attempts:
             print("S: Password attempts exceeded.")
+            self.printer.write(name='S', msg=f"Password attempts exceeded.")
             return
 
 
@@ -214,11 +234,13 @@ class PeerTLSInterface:
         symmkeyRemote = decrypt(key['private'],symmkeyRemote)
         symmkeyRemote = Fernet(symmkeyRemote)
         print(f"S: Recieved symmetric key from {self.remClientAddress[0]}")
+        self.printer.write(name='S', msg=f"Recieved symmetric key from {self.remClientAddress[0]}")
 
         
         mode = receiveMsg(socket=self.remClientSocket, BufferSize=self.BufferSize)
         if mode == "RetrievalMode":
             print("S: (retrievalMode): receiving locations to send them and load in memory")
+            self.printer.write(name='S(retrievalMode)', msg=f"Receiving locations to send them and load in memory")
             locations = receiveLocationsList(socket=self.remClientSocket, BufferSize=self.BufferSize)
             
             locationIndex = 0
@@ -227,10 +249,12 @@ class PeerTLSInterface:
                 self.loadDataFromStorage(searchFromIndex=locationIndex, locationList=locations)
                 if self.payload == None:
                     "S: (retrievalMode) Data not found, exiting..."
+                    self.printer.write(name='S(retrievalMode)', msg=f"Data not found, exiting...")
                     self.remClientSocket.close()
                     return
                 
                 "S: (retrievalMode) Sending the Payload"
+                self.printer.write(name='S(retrievalMode)', msg=f"Sending the Payload")
                 self.remClientSocket.send(self.payload)
                 msg = receiveMsg(socket=self.remClientSocket, BufferSize=self.BufferSize)
                 if msg == "END":
@@ -241,14 +265,18 @@ class PeerTLSInterface:
         elif mode == "StorageMode":
             self.payload = receivePayload(socket=self.remClientSocket)
             print("S: (not RetrievalMode) recieved", self.payload.getbuffer().nbytes)
+            self.printer.write(name='S(storeMode)', msg=f"recieved {self.payload.getbuffer().nbytes} bytes")
             locations = []
-            print("S: (not RetrievalMode): saving payload and sending locations of stored files")
+
+            
+            if platform.uname().system == 'Windows':
+                path = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop') 
+            else: 
+                path = os.path.join(os.path.join(os.path.expanduser('~')), 'Desktop') 
+            print(f"S: (not RetrievalMode): saving payload at {path} and sending locations of stored files")
+            self.printer.write(name='S(storeMode)', msg=f"saving payload at {path} and sending locations of stored files")
             for _ in range(self.localRedundancyCount):
                 fileName = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for i in range(10))
-                if platform.uname().system == 'Windows':
-                    path = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop') 
-                else: 
-                    path = os.path.join(os.path.join(os.path.expanduser('~')), 'Desktop') 
 
                 locations.append(f"{path}\{fileName}.bin")
                 self.savePayload(f"{path}\{fileName}.bin")
@@ -256,10 +284,12 @@ class PeerTLSInterface:
             sendLocationsList(socket=self.remClientSocket, locationList=locations)
         else:
             print("S: unknown mode received: ", mode)
+            self.printer.write(name='S', msg=f"unknown mode received: {mode}")
             self.remClientSocket.close()
             return
         
         print("S: Transaction complete, Ending connection")
+        self.printer.write(name='S', msg=f"Transaction complete, Ending connection")
         self.remClientSocket.close()
         # return "DONE payload"
         return self.payload
@@ -272,6 +302,7 @@ class PeerTLSInterface:
 
     def loadDataFromStorage(self, searchFromIndex, locationList):
         print("LocationList:", locationList)
+        self.printer.write(name='LocationList', msg=f"{locationList}")
         for path in locationList[searchFromIndex:]:
             my_file = pathlib.Path(path)
             if my_file.is_file():
@@ -279,6 +310,8 @@ class PeerTLSInterface:
                     self.payload = f.read()
                     if(len(self.payload) == CHUNK_SIZE):
                         print(f"S: data found at {path}")
+                        self.printer.write(name='S', msg=f"data found at {path}")
                         return
                     else:
                         print(f"S: data at {path} is corrupted, retrying...")
+                        self.printer.write(name='S', msg=f"data at {path} is corrupted, retrying...")

@@ -3,6 +3,8 @@ import urllib.request
 import re, uuid
 import json,sys
 
+from ui.printer import Printer
+
 # from utils.singleton_meta import SingletonMeta
 
 class SingletonMeta(type):
@@ -35,9 +37,12 @@ class DiscoveryServiceInterface(metaclass=SingletonMeta):
         self.clientMultiSocket = socket.socket()
         self.clientMultiSocket.bind(('0.0.0.0', 0))
         self.clientMultiSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        localPort = self.clientMultiSocket.getsockname()[1]
+        localPort = self.clientMultiSocket.getsockname()[1] 
+        self.printer = Printer()
+        self.printer.write(name='Discovery', msg=f"Bound to local port: {localPort}")
 
         print('Discovery: Waiting for connection response')
+        self.printer.write(name='Discovery', msg=f"Sending connection request to Discovery Server at {self.server_port}:{self.server_port}")
         try:
             self.clientMultiSocket.connect((self.server_ip, self.server_port))
         except socket.error as e:
@@ -46,6 +51,7 @@ class DiscoveryServiceInterface(metaclass=SingletonMeta):
         res = self.clientMultiSocket.recv(1024)
 
         d_data = {'ip': self.external_ip, 'port':localPort, 'mac':self.mac_add}
+        self.printer.write(name='Discovery', msg=f"Sending location info to Discovery Server: {d_data}")
         data = json.dumps(d_data)
         self.clientMultiSocket.sendall(bytes(data,encoding="utf-8"))
         
@@ -55,6 +61,7 @@ class DiscoveryServiceInterface(metaclass=SingletonMeta):
         res = self.clientMultiSocket.recv(1024)
         self.peersList = json.loads(res)
         print("Discovery: available peers: ", self.peersList)
+        self.printer.write(name='Discovery', msg=f"Retrieving peers: {self.peersList}")
 
     def retreive_known_peers(self, mac_addr_list: list):
         json_data = json.dumps(mac_addr_list)
@@ -62,14 +69,16 @@ class DiscoveryServiceInterface(metaclass=SingletonMeta):
         res = self.clientMultiSocket.recv(1024)
         self.peersList = json.loads(res)
         print("Discovery: available peers: ", self.peersList)
+        self.printer.write(name='Discovery', msg=f"Retrieving known peers: {self.peersList}")
         
 
     def __del__(self):
+        self.printer.write(name='Discovery', msg=f"Closing conneciton")
         self.clientMultiSocket.close()
 
-if __name__ == "__main__":
-    d = DiscoveryServiceInterface()
+# if __name__ == "__main__":
+#     d = DiscoveryServiceInterface()
 
-    d.retrieve_peers()
-    d.retreive_known_peers([d.mac_add])
-    d.retreive_known_peers([d.mac_add, d.mac_add])
+#     d.retrieve_peers()
+#     d.retreive_known_peers([d.mac_add])
+#     d.retreive_known_peers([d.mac_add, d.mac_add])

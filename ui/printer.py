@@ -23,5 +23,8 @@ class Printer(metaclass=SingletonMeta):
     def getHTML(self):
         return self.html + self.htmlEnd
     
-    def write(self, name: str, msg: str):
+    def write2(self, name: str, msg: str):
         self.html += f"<p> <span class='line3'>Chunk-{name}: </span> <span class='line4'>{msg}</span></p>"
+
+    def write(self, name: str, msg: str):
+        self.html += f"<p> <span class='line3'>{name}: </span> <span class='line4'>{msg}</span></p>"
