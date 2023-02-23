@@ -126,7 +126,7 @@ with gr.Blocks(css='ui/main.css') as demo:
         with gr.Column(scale=6,): 
             gr.Markdown("# Secure data storage and hiding")
         backBtn = gr.Button("Back")
-        backBtn.click(backBtnHandler, outputs= [visibleBox, invisibleBox])
+        # backBtn.click(backBtnHandler, outputs= [visibleBox, invisibleBox])
     # passwordPage()
     receiverBox()
     # homePage()

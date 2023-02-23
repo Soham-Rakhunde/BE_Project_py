@@ -9,6 +9,7 @@
 #Items necessary to perform operations with private/public keys
 from concurrent.futures import ThreadPoolExecutor
 import pathlib
+import platform
 import secrets
 import string
 from cryptography.hazmat.backends import default_backend
@@ -244,8 +245,13 @@ class PeerTLSInterface:
             print("S: (not RetrievalMode): saving payload and sending locations of stored files")
             for _ in range(self.localRedundancyCount):
                 fileName = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for i in range(10))
-                locations.append(f"C://Users//soham//OneDrive//Desktop//{fileName}.bin")
-                self.savePayload(f"C://Users//soham//OneDrive//Desktop//{fileName}.bin")
+                if platform.uname().system == 'Windows':
+                    path = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop') 
+                else: 
+                    path = os.path.join(os.path.join(os.path.expanduser('~')), 'Desktop') 
+
+                locations.append(f"{path}\{fileName}.bin")
+                self.savePayload(f"{path}\{fileName}.bin")
 
             sendLocationsList(socket=self.remClientSocket, locationList=locations)
         else:

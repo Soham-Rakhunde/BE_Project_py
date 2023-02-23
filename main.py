@@ -4,7 +4,6 @@ from services.encrypt_module import EncryptionService
 from services.data_handler_module import DataHandler
 from services.hmac_module import HMAC_Module
 from services.partitioning_module import Partitioner
-import base64
 
 from services.tracker_module import Tracker
 

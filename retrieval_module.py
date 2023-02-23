@@ -1,5 +1,7 @@
 import base64
 import json
+import os
+import platform
 from peer_discovery.discoveryServiceInterface import DiscoveryServiceInterface
 from services.data_handler_module import DataHandler
 from services.encrypt_module import EncryptionService
@@ -65,7 +67,13 @@ class RetrieverModule:
         _dataHandler.decode(buffer=mergedBuffer)
         
         EncryptionService.decrypt(_dataHandler)
-        _dataHandler.write_file( save_path = f'C:\\Users\\soham\\OneDrive\\Desktop\\{self.trackerJSON["name"]}')
+        
+        if platform.uname().system == 'Windows':
+            path = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop') 
+        else: 
+            path = os.path.join(os.path.join(os.path.expanduser('~')), 'Desktop') 
+
+        _dataHandler.write_file( save_path = f'{path}\{self.trackerJSON["name"]}')
 
     def receiveScheduler(self):
 
