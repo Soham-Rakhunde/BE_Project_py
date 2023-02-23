@@ -9,7 +9,7 @@ port_number = dict()
 all_data = set()
 
 ServerSideSocket = socket.socket()
-host = '127.0.0.1'
+host = '0.0.0.0'
 port = 11100
 ThreadCount = 0
 

@@ -3,7 +3,26 @@ import urllib.request
 import re, uuid
 import json,sys
 
-from utils.singleton_meta import SingletonMeta
+# from utils.singleton_meta import SingletonMeta
+
+class SingletonMeta(type):
+    """
+    The Singleton class can be implemented in different ways in Python. Some
+    possible methods include: base class, decorator, metaclass. We will use the
+    metaclass because it is best suited for this purpose.
+    """
+
+    _instances = {}
+
+    def __call__(cls, *args, **kwargs):
+        """
+        Possible changes to the value of the `__init__` argument do not affect
+        the returned instance.
+        """
+        if cls not in cls._instances:
+            instance = super().__call__(*args, **kwargs)
+            cls._instances[cls] = instance
+        return cls._instances[cls]
 
 class DiscoveryServiceInterface(metaclass=SingletonMeta):
     server_ip = '127.0.0.1'
@@ -32,7 +51,7 @@ class DiscoveryServiceInterface(metaclass=SingletonMeta):
         
     def retrieve_peers(self):
         # TODO: uncomment this and change the decoding to JSON instead
-        self.clientMultiSocket.sendall(str.encode(1))
+        self.clientMultiSocket.sendall(str.encode('1'))
         res = self.clientMultiSocket.recv(1024)
         self.peersList = json.loads(res)
         print("Discovery: available peers: ", self.peersList)
@@ -47,3 +66,10 @@ class DiscoveryServiceInterface(metaclass=SingletonMeta):
 
     def __del__(self):
         self.clientMultiSocket.close()
+
+if __name__ == "__main__":
+    d = DiscoveryServiceInterface()
+
+    d.retrieve_peers()
+    d.retreive_known_peers([d.mac_add])
+    d.retreive_known_peers([d.mac_add, d.mac_add])

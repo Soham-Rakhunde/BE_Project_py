@@ -1,5 +1,6 @@
 import base64
 import json
+from peer_discovery.discoveryServiceInterface import DiscoveryServiceInterface
 from services.data_handler_module import DataHandler
 from services.encrypt_module import EncryptionService
 from services.hmac_module import HMAC_Module
@@ -23,6 +24,27 @@ class RetrieverModule:
             print(e)
             return
         print("Retriever: Decoded Tracker JSON from", self.tracker_path)
+
+        mac_list = []
+        for chunk in self.trackerJSON['chunks']:
+            for peer in chunk['peers']:
+                mac_list.append(peer['mac'])
+        
+        
+        # update the entries with current IP addresses
+        discovery = DiscoveryServiceInterface()
+        discovery.retreive_known_peers(mac_addr_list=mac_list)
+
+
+        for chunk in self.trackerJSON['chunks']:
+            for peer in chunk['peers']:
+                activePeer = next(iterator=filter(lambda activePeer: peer['mac-addr'] == activePeer['mac'], discovery.peersList), default=None)
+                if activePeer == None:
+                    print(f"Retriever: For Chunk-{chunk['id']} peer with Mac address {peer['mac-addr']} found inactive")
+                else:
+                    print(f"Retriever: For Chunk-{chunk['id']} peer with Mac address {peer['mac-addr']} found active at IP: {activePeer['ip']}")
+                    peer['address'] = activePeer['ip']
+
 
         # Create the queue of iterators for each chunk
         self.chunkQueue = deque()
