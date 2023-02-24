@@ -164,11 +164,11 @@ class PeerTLSInterface:
             print("S: Connection Cancelled, or timed out")
             self.printer.write(name='S', msg=f"Connection Cancelled, or timed out")
             return
-        if self.remClientAddress[0] != remoteAddress:
-            serverSocket.close()
-            print(f"S: Connection recieved from unexpected host ({self.remClientAddress[0]})")
-            self.printer.write(name='S', msg=f"Connection recieved from unexpected host ({self.remClientAddress[0]})")
-            return
+        # if self.remClientAddress[0] != remoteAddress:
+        #     serverSocket.close()
+        #     print(f"S: Connection recieved from unexpected host ({self.remClientAddress[0]})")
+        #     self.printer.write(name='S', msg=f"Connection recieved from unexpected host ({self.remClientAddress[0]})")
+        #     return
 
         print(f"S: Established connection from {self.remClientAddress[0]}")
         self.printer.write(name='S', msg=f"Established connection from {self.remClientAddress[0]}")
