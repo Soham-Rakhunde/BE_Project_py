@@ -30,7 +30,7 @@ class RetrieverModule:
         mac_list = []
         for chunk in self.trackerJSON['chunks']:
             for peer in chunk['peers']:
-                mac_list.append(peer['mac'])
+                mac_list.append(peer['mac-addr'])
         
         
         # update the entries with current IP addresses
@@ -40,7 +40,7 @@ class RetrieverModule:
 
         for chunk in self.trackerJSON['chunks']:
             for peer in chunk['peers']:
-                activePeer = next(iterator=filter(lambda activePeer: peer['mac-addr'] == activePeer['mac'], discovery.peersList), default=None)
+                activePeer = next(filter(lambda activePeer: peer['mac-addr'] == activePeer['mac'], discovery.peersList), None)
                 if activePeer == None:
                     print(f"Retriever: For Chunk-{chunk['id']} peer with Mac address {peer['mac-addr']} found inactive")
                 else:
