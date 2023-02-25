@@ -19,12 +19,26 @@ class Printer(metaclass=SingletonMeta):
 
     htmlEnd = '''<p class="line4">><span class="cursor4">_</span></p>
         </div>'''
+    
+    def flush(self):
+        self.html = '''
+    <script>
+        window.setInterval(function() {
+        var elem = document.getElementById("style-2");
+        elem.scrollTop = elem.scrollHeight;
+        }, 2000);
+    </script>
+    <div style="height:10px;"></div>
+    <div class=fakeMenu>
+  <div class="fakeButtons fakeClose"></div>
+  <div class="fakeButtons fakeMinimize"></div>
+  <div class="fakeButtons fakeZoom"></div>
+</div>
+<div class="fakeScreen" id="style-2">
+  '''
 
     def getHTML(self):
         return self.html + self.htmlEnd
-    
-    def write2(self, name: str, msg: str):
-        self.html += f"<p> <span class='line3'>Chunk-{name}: </span> <span class='line4'>{msg}</span></p>"
 
     def write(self, name: str, msg: str):
         self.html += f"<p> <span class='line3'>{name}: </span> <span class='line4'>{msg}</span></p>"

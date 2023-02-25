@@ -1,6 +1,6 @@
 import time
 import gradio as gr
-from peer_discovery.discoveryServiceInterface import DiscoveryServiceInterface
+# from peer_discovery.discoveryServiceInterface import DiscoveryServiceInterface
 from services.network_services.peerTLSInterface import PeerTLSInterface
 
 from ui.printer import Printer
@@ -15,24 +15,12 @@ invisibleBox = None
 
 
 
-
-
-def wer_help():
-    p = Printer()
-    for i in range(15):
-        p.write2(name=f"{i%4 +1}", msg=str(i))
-        time.sleep(0.4)
-
-
-def terminalUI():
+def terminalUI(callFunc):
+    progressBar = gr.Markdown(value="")
     gr.HTML(value=pr.getHTML, label="Terminal", every = 1)
     btsn = gr.Button("Run")
-    DiscoveryServiceInterface()
-    ob = PeerTLSInterface(remoteAddress = '192.168.0.103', localPort= 11111)
-    # fut = executor.submit(ob.connectToRemoteClient,keypasswd='G00dP@ssw0rd', hostpassword ='P@ssw0rd',remotepassword ='P@ssw0rd')
-    def callFunc():
-        ob.connectToRemoteClient(keypasswd='G00dP@ssw0rd', hostpassword ='P@ssw0rd',remotepassword ='P@ssw0rd')
-    btsn.click(fn=callFunc)
+    btsn.click(fn=callFunc, inputs=progressBar,outputs=progressBar)
+
 
 def upload_file(files):
     file_paths = [file.name for file in files]
@@ -57,15 +45,20 @@ def homePage():
 
 
 def receiverBox():
+    # DiscoveryServiceInterface()
+    peerInterface = PeerTLSInterface(remoteAddress = '192.168.0.103', localPort= 11111)
+
     with gr.Box() as tabBox:
-        gr.Markdown("""
-            ### <center> Receiver Mode </center>
+        gr.Markdown("### <center> Receiver Mode </center>")    
+        gr.DataFrame(headers=peerInterface.getHeaders, value=peerInterface.getRowValues, datatype=["str"]*5, wrap=True, every=1)
+        
 
-            Peer-IP: 192.168.30.102 \n
-            Chunks: 4 \n
-            Received: 2 MB
-
-        """)
+        def callFunc(progressBar, progress=gr.Progress(track_tqdm=True)):
+            peerInterface.progress = progress
+            peerInterface.connectToRemoteClient(keypasswd='G00dP@ssw0rd', hostpassword ='P@ssw0rd',remotepassword ='P@ssw0rd')
+            return progressBar.update(value="<center> # Sucessfully Completed </center>")
+        
+        terminalUI(callFunc=callFunc)
     
     return tabBox
 
@@ -126,6 +119,12 @@ def backBtnHandler():
     else:
         return [visibleBox, invisibleBox]
 
+def receiverPage(progress= gr.Progress(track_tqdm=True)):
+    with gr.Box():
+        receiverBox()
+        terminalUI()
+
+
 with gr.Blocks(css='ui/main.css') as demo:
     # discovery = DiscoveryServiceInterface()
     with gr.Row():
@@ -136,9 +135,6 @@ with gr.Blocks(css='ui/main.css') as demo:
     # passwordPage()
     receiverBox()
     # homePage()
-    terminalUI()
-
-# demo.queue()
 
 
 demo.queue()

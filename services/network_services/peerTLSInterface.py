@@ -12,13 +12,14 @@ import pathlib
 import platform
 import secrets
 import string
+from subprocess import check_output
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from ui.printer import Printer
 from utils.constants import CHUNK_SIZE, TLS_MAX_SIZE
 from utils.socket_util_functions import receiveLocationsList, receiveMsg, receivePayload, sendLocationsList
 from utils.tls_util_functions import *
-
+import gradio as gr
 
 #Symmetric key generation
 from cryptography.fernet import Fernet
@@ -63,17 +64,48 @@ class PeerTLSInterface:
     passwd_hashingAlgorithm = hashes.SHA256()
     passwd_attempts = 4
     BufferSize = 1024
-
+    progress = None
+    mode = "Not decided yet"
     
 
-    def __init__(self, remoteAddress: str, localPort: int, retrievalMode:bool = False, threadPoolExecutor: ThreadPoolExecutor = None, locationsList: list= None):
+    # UI functions
+    def progress_update(self, percent, desc):
+        if self.progress != None:
+            self.progress(percent/100, desc=desc,unit="percent")
+
+    def progress_tqdm(self, iter, desc):
+        if self.progress != None:
+            return self.progress.tqdm(iter, desc=desc,unit="percent")
+        else:
+            return iter
+
+
+    getHeaders = ["Local IP Address",  "Peer IP Address", 'Local Redundancy Ratio', 'Mode', 'Locations list']
+
+    getRowValues = [[f"{localServerAddress}:{localPort}", f"{remClientAddress}", localRedundancyCount, mode,"-" if locationsList == None else " ".join(locationsList)]]
+
+    def updateUIValues(self):
+        self.getRowValues = [[f"{self.localServerAddress}:{self.localPort}", 
+                         f"{self.remClientAddress}", 
+                         self.localRedundancyCount, 
+                         self.mode,
+                         "-" if self.locationsList == None else " ".join(self.locationsList)]]
+
+    def __init__(self, remoteAddress: str, localPort: int, retrievalMode:bool = False, threadPoolExecutor: ThreadPoolExecutor = None, locationsList: list= None, progress: gr.Progress = None):
         self.remClientAddress = remoteAddress
         self.threadPoolExecutor = threadPoolExecutor
         self.localPort = localPort
         self.retrievalMode = retrievalMode
         self.locationsList = locationsList
+        self.progress = progress
+
+        if platform.uname().system == 'Windows':
+            hostname = socket.gethostname()
+            self.localServerAddress = socket.gethostbyname(hostname)
+        else: 
+            self.localServerAddress = str(check_output(['hostname', '--all-ip-addresses']))[2:-4]
+        self.updateUIValues()
         
-            
         self.printer = Printer()
 
         #Create directories to house the host identity, and remote public certs
@@ -146,6 +178,7 @@ class PeerTLSInterface:
 
         print(f"S: Listening on LocalServerPort {self.localPort} (Press Enter to exit)...")
         self.printer.write(name='S', msg=f"Listening on LocalServerPort {self.localPort} (Press Enter to exit)...")
+        self.progress_update(5, desc='Sockets listening')
 
         #Start listening for connection
         serverSocket.listen(1)
@@ -172,6 +205,8 @@ class PeerTLSInterface:
 
         print(f"S: Established connection from {self.remClientAddress[0]}")
         self.printer.write(name='S', msg=f"Established connection from {self.remClientAddress[0]}")
+        
+        self.progress_update(7, desc=f'Connection established with {self.remClientAddress[0]}')
 
         
     #     self.payloadFuture = self.threadPoolExecutor.submit(self.authenticateAndReveive, hostpassword, keypasswd)
@@ -184,6 +219,7 @@ class PeerTLSInterface:
         print("S: Retrieved Keypair")
         self.printer.write(name='S', msg=f"Retrieved Keypair")
 
+        self.progress_update(10, desc=f'Retrieveied keypair')
 
         #Hash the passwords before sending them over the wire
         h = hashes.Hash(self.passwd_hashingAlgorithm,backend=default_backend())
@@ -225,7 +261,8 @@ class PeerTLSInterface:
             print("S: Password attempts exceeded.")
             self.printer.write(name='S', msg=f"Password attempts exceeded.")
             return
-
+        
+        self.progress_update(20, desc=f'Password verification completed')
 
         #Symmetric Key Exchange
 
@@ -236,17 +273,23 @@ class PeerTLSInterface:
         print(f"S: Recieved symmetric key from {self.remClientAddress[0]}")
         self.printer.write(name='S', msg=f"Recieved symmetric key from {self.remClientAddress[0]}")
 
+        self.progress_update(30, desc=f'Key exchange completed successfully')
         
-        mode = receiveMsg(socket=self.remClientSocket, BufferSize=self.BufferSize)
-        if mode == "RetrievalMode":
+        self.mode = receiveMsg(socket=self.remClientSocket, BufferSize=self.BufferSize)
+        
+        self.updateUIValues()
+        self.progress_update(35, desc='Received mode message successfully')
+        if self.mode == "RetrievalMode":
             print("S: (retrievalMode): receiving locations to send them and load in memory")
             self.printer.write(name='S(retrievalMode)', msg=f"Receiving locations to send them and load in memory")
-            locations = receiveLocationsList(socket=self.remClientSocket, BufferSize=self.BufferSize)
+            self.locationsList = receiveLocationsList(socket=self.remClientSocket, BufferSize=self.BufferSize)
+            self.progress_update(45, desc='Received locations')
             
             locationIndex = 0
             
-            while locationIndex < len(locations): # If HMAC is incorrect then they can retry
-                self.loadDataFromStorage(searchFromIndex=locationIndex, locationList=locations)
+            while locationIndex < len(self.locationsList): # If HMAC is incorrect then they can retry
+                self.loadDataFromStorage(searchFromIndex=locationIndex, locationList=self.locationsList)
+                self.updateUIValues()
                 if self.payload == None:
                     "S: (retrievalMode) Data not found, exiting..."
                     self.printer.write(name='S(retrievalMode)', msg=f"Data not found, exiting...")
@@ -254,19 +297,24 @@ class PeerTLSInterface:
                     return
                 
                 "S: (retrievalMode) Sending the Payload"
+                
+                self.progress_update(65, desc='Sending data')
                 self.printer.write(name='S(retrievalMode)', msg=f"Sending the Payload")
                 self.remClientSocket.send(self.payload)
                 msg = receiveMsg(socket=self.remClientSocket, BufferSize=self.BufferSize)
                 if msg == "END":
+                    self.progress_update(100, desc='Completed')
                     break
                 else:
                     locationIndex = max(locationIndex, int(msg))
 
-        elif mode == "StorageMode":
+        elif self.mode == "StorageMode":
+            self.progress_update(40, desc='Receiving data for storage')
             self.payload = receivePayload(socket=self.remClientSocket)
             print("S: (not RetrievalMode) recieved", self.payload.getbuffer().nbytes)
             self.printer.write(name='S(storeMode)', msg=f"recieved {self.payload.getbuffer().nbytes} bytes")
-            locations = []
+            self.progress_update(70, desc='Received data successfully')
+            self.locationsList = []
 
             
             if platform.uname().system == 'Windows':
@@ -275,22 +323,27 @@ class PeerTLSInterface:
                 path = os.path.join(os.path.join(os.path.expanduser('~')), 'Desktop') 
             print(f"S: (not RetrievalMode): saving payload at {path} and sending locations of stored files")
             self.printer.write(name='S(storeMode)', msg=f"saving payload at {path} and sending locations of stored files")
-            for _ in range(self.localRedundancyCount):
+            self.progress_update(80, desc='Saving data locally')
+            for _ in self.progress_tqdm(range(self.localRedundancyCount), f"Saving {self.localRedundancyCount} times for redundancy"):
                 fileName = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for i in range(10))
 
-                locations.append(f"{path}\{fileName}.bin")
+                self.locationsList.append(f"{path}\{fileName}.bin")
                 self.savePayload(f"{path}\{fileName}.bin")
-
-            sendLocationsList(socket=self.remClientSocket, locationList=locations)
+            
+            self.updateUIValues()
+            self.progress_update(95, desc='Sending locations list back to sender')
+            sendLocationsList(socket=self.remClientSocket, locationList=self.locationsList)
         else:
-            print("S: unknown mode received: ", mode)
-            self.printer.write(name='S', msg=f"unknown mode received: {mode}")
+            print("S: unknown mode received: ", self.mode)
+            self.printer.write(name='S', msg=f"unknown mode received: {self.mode}")
             self.remClientSocket.close()
             return
         
         print("S: Transaction complete, Ending connection")
         self.printer.write(name='S', msg=f"Transaction complete, Ending connection")
         self.remClientSocket.close()
+        self.progress_update(100, desc='Completed successfully')
+
         # return "DONE payload"
         return self.payload
     
@@ -303,7 +356,7 @@ class PeerTLSInterface:
     def loadDataFromStorage(self, searchFromIndex, locationList):
         print("LocationList:", locationList)
         self.printer.write(name='LocationList', msg=f"{locationList}")
-        for path in locationList[searchFromIndex:]:
+        for path in self.progress_tqdm(locationList[searchFromIndex:], "Finding files from location list"):
             my_file = pathlib.Path(path)
             if my_file.is_file():
                 with open(path, "rb") as f:
