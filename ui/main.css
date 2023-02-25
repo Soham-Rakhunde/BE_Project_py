@@ -51,7 +51,9 @@ body {
   height:500px;
 }
 
-
+/* #homeBtn1{
+  margin: 20px;
+} */
 
 #style-2::-webkit-scrollbar-track
 {
@@ -120,7 +122,7 @@ p {
 }
 
 .line3 {
-  color: #E09690 !important;
+  color: #E09690;
   -webkit-animation: type .5s 7.5s steps(20, end) forwards;
   -moz-animation: type .5s 7.5s steps(20, end) forwards;
   -o-animation: type .5s 7.5s steps(20, end) forwards;

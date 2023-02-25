@@ -1,5 +1,8 @@
 import base64
 import json
+import os
+import platform
+from peer_discovery.discoveryServiceInterface import DiscoveryServiceInterface
 from services.data_handler_module import DataHandler
 from services.encrypt_module import EncryptionService
 from services.hmac_module import HMAC_Module
@@ -24,6 +27,27 @@ class RetrieverModule:
             return
         print("Retriever: Decoded Tracker JSON from", self.tracker_path)
 
+        mac_list = []
+        for chunk in self.trackerJSON['chunks']:
+            for peer in chunk['peers']:
+                mac_list.append(peer['mac-addr'])
+        
+        
+        # update the entries with current IP addresses
+        discovery = DiscoveryServiceInterface()
+        discovery.retreive_known_peers(mac_addr_list=mac_list)
+
+
+        for chunk in self.trackerJSON['chunks']:
+            for peer in chunk['peers']:
+                activePeer = next(filter(lambda activePeer: peer['mac-addr'] == activePeer['mac'], discovery.peersList), None)
+                if activePeer == None:
+                    print(f"Retriever: For Chunk-{chunk['id']} peer with Mac address {peer['mac-addr']} found inactive")
+                else:
+                    print(f"Retriever: For Chunk-{chunk['id']} peer with Mac address {peer['mac-addr']} found active at IP: {activePeer['ip']}")
+                    peer['address'] = activePeer['ip']
+
+
         # Create the queue of iterators for each chunk
         self.chunkQueue = deque()
         self.chunkTryIndex = {}
@@ -43,7 +67,13 @@ class RetrieverModule:
         _dataHandler.decode(buffer=mergedBuffer)
         
         EncryptionService.decrypt(_dataHandler)
-        _dataHandler.write_file( save_path = f'C:\\Users\\soham\\OneDrive\\Desktop\\{self.trackerJSON["name"]}')
+        
+        if platform.uname().system == 'Windows':
+            path = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop') 
+        else: 
+            path = os.path.join(os.path.join(os.path.expanduser('~')), 'Desktop') 
+
+        _dataHandler.write_file( save_path = f'{path}\{self.trackerJSON["name"]}')
 
     def receiveScheduler(self):
 

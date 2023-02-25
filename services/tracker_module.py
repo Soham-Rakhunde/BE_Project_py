@@ -1,5 +1,6 @@
 import io, json
 import concurrent.futures
+from peer_discovery.discoveryServiceInterface import DiscoveryServiceInterface
 
 from utils.constants import *
 from services.hmac_module import HMAC_Module
@@ -10,15 +11,19 @@ class Tracker:
 
     def __init__(self, bufferObj: io.BufferedIOBase) -> None:
         self.bufferObj = bufferObj
+        discovery = DiscoveryServiceInterface()
+        discovery.retrieve_peers()
+        self.peersList = discovery.peersList
 
-    peersList = [
-        {'ip': '192.168.0.103', 'port':11111, 'mac':'44:AF:28:F2:EB:3A'},
-        {'ip': '192.168.0.103', 'port':11112, 'mac':'44:AF:28:F2:EB:3A'},
-        {'ip': '192.168.0.103', 'port':11113, 'mac':'44:AF:28:F2:EB:3A'},
-        {'ip': '192.168.0.103', 'port':11114, 'mac':'44:AF:28:F2:EB:3A'},
-        {'ip': '192.168.0.103', 'port':11115, 'mac':'44:AF:28:F2:EB:3A'},
-        {'ip': '192.168.0.103', 'port':11116, 'mac':'44:AF:28:F2:EB:3A'}
-    ]
+
+    # peersList = [
+    #     {'ip': '192.168.60.216', 'port':11111, 'mac':'44:AF:28:F2:EB:3A'},
+    #     {'ip': '192.168.60.216', 'port':11112, 'mac':'44:AF:28:F2:EB:3A'},
+    #     {'ip': '192.168.60.216', 'port':11113, 'mac':'44:AF:28:F2:EB:3A'},
+    #     {'ip': '192.168.60.216', 'port':11114, 'mac':'44:AF:28:F2:EB:3A'},
+    #     {'ip': '192.168.60.216', 'port':11115, 'mac':'44:AF:28:F2:EB:3A'},
+    #     {'ip': '192.168.60.216', 'port':11116, 'mac':'44:AF:28:F2:EB:3A'}
+    # ]
 
 
     def is_compatible_reduncancy_ratio(self):

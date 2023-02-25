@@ -1,17 +1,16 @@
 from binascii import hexlify
 import socket
-import os
+import os,json,sys
 from _thread import *
 
 mac_list = set()
 ip_address = dict()
 port_number = dict()
-
 all_data = set()
 
 ServerSideSocket = socket.socket()
-host = '127.0.0.1'
-port = 2004
+host = '0.0.0.0'
+port = 11100
 ThreadCount = 0
 
 
@@ -22,14 +21,18 @@ except socket.error as e:
 print('Socket is listening..')
 
 
-ServerSideSocket.listen(5)
+ServerSideSocket.listen(5)      
 def multi_threaded_client(connection,address):
     try:
         connection.send(str.encode('!!Server is working!!'))
-        uni_data = connection.recv(2048)
-        uni_data = uni_data.decode('utf-8')
-        all_data.add(uni_data)
-        mac_data,ip_data,port_data = uni_data.split(" ")
+        uni_data_ = connection.recv(2048)
+        uni_data_ = uni_data_.decode('utf-8')
+        all_data.add(uni_data_)
+        uni_data = json.loads(uni_data_)
+        mac_data = uni_data['mac']
+        ip_data = uni_data['ip']
+        port_data = uni_data['port']
+        
         if(mac_data not in mac_list):
             mac_list.add(mac_data)
             ip_address[mac_data]=[ip_data]
@@ -43,23 +46,28 @@ def multi_threaded_client(connection,address):
             data = data.decode('utf-8')
             response=''
             if not data:
+                raise ConnectionResetError
                 break
             if data=='1':       #all connected clients
-                response = str(all_data)
+                response = []
+                for i in all_data:
+                    response.append(json.loads(i))
+                response = json.dumps(response)
             else:   #returns list and data is mac address
-                if(data in mac_list):
-                    response = ''              
-                    for i in range(len(ip_address[data])):
-                        if(i!=len(ip_address[data])-1):
-                            response+=(ip_address[data][i]+' '+port_number[data][i]+',')
-                        else:
-                            response+=(ip_address[data][i]+' '+port_number[data][i])
-                else:
-                    response = 'wrong call'
+                list_of_mac = json.loads(data)
+                response = []
+                for m_data in list_of_mac:
+                    if m_data in mac_list:
+                        for i in range(len(ip_address[m_data])):
+                            local_response = dict()
+                            local_response['ip'] = ip_address[m_data][i]
+                            local_response['port'] = port_number[m_data][i]
+                            local_response['mac'] = m_data
+                            response.append(local_response)
+                response = json.dumps(response)
             connection.sendall(str.encode(response))
 
     except ConnectionResetError:
-        all_data.remove(uni_data)
         n = len(ip_address[mac_data])
         if(n==1):
             mac_list.remove(mac_data)
@@ -68,8 +76,9 @@ def multi_threaded_client(connection,address):
         else:
             ip_address[mac_data].remove(ip_data)
             port_number[mac_data].remove(port_data)
+        all_data.remove(uni_data_)
         connection.close()
-
+        print('Connection closed: '+address[0] + ':' + str(address[1]))
 
 while True:
     Client, address = ServerSideSocket.accept()
