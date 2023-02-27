@@ -1,5 +1,7 @@
 import os, io
+from ui.printer import Printer
 from utils.constants import *
+import ntpath
 
 class DataHandler:
     file_path: str = None
@@ -10,6 +12,11 @@ class DataHandler:
 
     def __init__(self, file_path: str = None):
         self.file_path = file_path
+        self.printer = Printer()
+
+    def file_name(self):
+        head, tail = os.path.split(self.file_path)
+        return tail
 
     def read_file(self):
         with open(self.file_path, 'rb') as f:
@@ -26,9 +33,11 @@ class DataHandler:
         -> 16 bytes of MACTag
     '''
     def encode_and_pad(self) -> io.BufferedIOBase: 
+        self.printer.write(name='DataHandler', msg=f"Encoding and padding the Cipher, Nonce and MAC tag to form a buffer")
         PAD_SIZE = CHUNK_SIZE - (len(self.cipher) + 16 + 16 + 3) % CHUNK_SIZE
         if PAD_SIZE == CHUNK_SIZE:
             PAD_SIZE = 0
+            
 
 
         pad_size_bin = PAD_SIZE.to_bytes(length=3, byteorder='big')
@@ -49,14 +58,19 @@ class DataHandler:
         print("Chunk size: ", CHUNK_SIZE)
         print("Pad size: ", PAD_SIZE)
         print("buffer size: ", buffer.getbuffer().nbytes)
+        self.printer.write(name='DataHandler', msg=f"Cipher size: {len(self.cipher)} Bytes")
+        self.printer.write(name='DataHandler', msg=f"Pad size: {PAD_SIZE} Bytes")
+        self.printer.write(name='DataHandler', msg=f"Buffer size: {buffer.getbuffer().nbytes} Bytes")
         return buffer
         
     def decode(self, buffer: io.BytesIO):
         print(type(buffer), buffer.getbuffer().nbytes)
+        self.printer.write(name='DataHandler', msg=f"Decoding buffer to extract Cipher, Nonce and Mac tag of size {buffer.getbuffer().nbytes} Bytes")
         
         buffer.seek(0)
         pad_size_bin = buffer.read1(3)
         PAD_SIZE = int.from_bytes(pad_size_bin, byteorder ='big')
+        
 
         buffer.read1(PAD_SIZE)
         print("PAD_SIZE", PAD_SIZE)
@@ -65,9 +79,12 @@ class DataHandler:
         self.cipher = buffer.read1(CIPHER_SIZE)
         self.AESNonce = buffer.read1(16)
         self.MACtag = buffer.read1(16)
-        print("CIPHEr: ", CIPHER_SIZE, " ",len(self.cipher))
+        print("CIPHER: ", CIPHER_SIZE, " ",len(self.cipher))
         print("AESNonce: ",len(self.AESNonce))
         print("MACtag: ",len(self.MACtag))
+        self.printer.write(name='DataHandler', msg=f"Cipher size retrieved: {len(self.cipher)} Bytes")
+        self.printer.write(name='DataHandler', msg=f"AESNonce size retrieved: {len(self.AESNonce)} Bytes")
+        self.printer.write(name='DataHandler', msg=f"MACtag size retrieved: {len(self.MACtag)} Bytes")
 
 
     def write_file(self, save_path = 'C:\\Users\\soham\\OneDrive\\Desktop\\3433.jpg'):
@@ -76,3 +93,4 @@ class DataHandler:
             f.write(self.data)
         print(os.path.exists(save_path))
         print("File saved at", save_path)
+        self.printer.write(name='DataHandler', msg=f"File saved at {save_path}")

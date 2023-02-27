@@ -30,7 +30,7 @@ body {
 }
 
 .fakeMenu {
-  width: 80%;
+  width: 90%;
   box-sizing: border-box;
   height: 25px;
   background-color: #bbbbbb;
@@ -42,7 +42,7 @@ body {
 .fakeScreen {
   background-color: #151515;
   box-sizing: border-box;
-  width: 80%;
+  width: 90%;
   margin: 0 auto;
   padding: 20px;
   border-bottom-left-radius: 5px;
@@ -83,7 +83,7 @@ p {
   font-family: monospace;
   white-space: normal;
   overflow: hidden;
-  width: 80%;
+  width: 100%;
 }
 
 /* span {
@@ -91,8 +91,17 @@ p {
   font-weight: bold;
 } */
 
+
+.line4 {
+  color: #ffffff !important;
+  -webkit-animation: type .5s 10.75s steps(20, end) forwards;
+  -moz-animation: type .5s 10.75s steps(20, end) forwards;
+  -o-animation: type .5s 10.75s steps(20, end) forwards;
+  animation: type .5s 10.75s steps(20, end) forwards;
+}
 .line1 {
   color: #9CD9F0 !important;
+  font-weight: bold;
   -webkit-animation: type .5s 1s steps(20, end) forwards;
   -moz-animation: type .5s 1s steps(20, end) forwards;
   -o-animation: type .5s 1s steps(20, end) forwards;
@@ -134,14 +143,6 @@ p {
   -moz-animation: blink 1s 8.5s 2 forwards;
   -o-animation: blink 1s 8.5s 2 forwards;
   animation: blink 1s 8.5s 2 forwards;
-}
-
-.line4 {
-  color: #ffffff !important;
-  -webkit-animation: type .5s 10.75s steps(20, end) forwards;
-  -moz-animation: type .5s 10.75s steps(20, end) forwards;
-  -o-animation: type .5s 10.75s steps(20, end) forwards;
-  animation: type .5s 10.75s steps(20, end) forwards;
 }
 
 .cursor4 {

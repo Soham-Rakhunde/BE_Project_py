@@ -1,6 +1,7 @@
 import io
 import pprint
 from services.data_handler_module import DataHandler
+from ui.printer import Printer
 from utils.constants import *
 
 
