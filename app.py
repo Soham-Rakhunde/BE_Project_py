@@ -1,4 +1,5 @@
 import json
+import os
 import time
 import gradio as gr
 # from peer_discovery.discoveryServiceInterface import DiscoveryServiceInterface
@@ -27,14 +28,6 @@ def terminalUI(log_name:str = None):
             return pr.getHTML(log_name=log_name)
         term = gr.HTML(value=callSpecialLogs,label="Terminal", every = 1)
     return term
-    
-
-def upload_file(files):
-    file_paths = [file.name for file in files]
-    print(file_paths)
-    print(files.name)
-    return files.name
-
 
 def passwordPage():
     keyHandler = KeyHandlerUI()
@@ -105,9 +98,9 @@ def receiverPage(redundancyRatio):
     
         return receiverBox
 
-def senderPage(redundancyRatio):
-    # DiscoveryServiceInterface()
-    _dataHandler, tracker = None, None
+def senderPage(redundancyRatio, file):
+# DiscoveryServiceInterface()
+    hostLogs = DataLogger()
     with gr.Box(visible=False) as senderBox:
         with gr.Column():
             gr.Markdown("### <center> Sender Mode </center>")
@@ -115,16 +108,9 @@ def senderPage(redundancyRatio):
                 btsn = gr.Button("Send Data / Start")   
                 
             def getValsList():
-                return [[_dataHandler.file_path if _dataHandler is not None else "", 
-                    len(_dataHandler.data) if _dataHandler is not None else "", 
-                    tracker.num_of_chunks if tracker is not None else "",
-                    tracker.nodes_redundancy_ratio if tracker is not None else "",
-                    ]]
-            gr.DataFrame(value=getValsList, headers=["File Name", "File Size(Bytes)", "Total Chunks", 'Redundancy Ratio'], 
+                return hostLogs.commonInfoList
+            gr.DataFrame(value=getValsList, headers=hostLogs.commmonHeaders, 
                         datatype=["str"]*5, wrap=True, every=0.1)
-            
-            # progressBar = gr.Markdown(value="")
-            
 
             jsonViewer = gr.JSON(visible="Progress",value=["Tracker.json yet to be generated"])
 
@@ -133,30 +119,33 @@ def senderPage(redundancyRatio):
             with gr.Accordion(label="Termianl Network Logs", open=False):
                 terminalUI(log_name="hostInterface")
 
-            hostLogs = DataLogger()
             def getValues():
                 return hostLogs.finalList
 
             with gr.Accordion(label="Peers Status", open=True):
-                gr.DataFrame(value=getValues, headers=["Thread Id", "Chunk Id", "Peer Id", "Peer IP Address", 'Location List', "Status"],
+                gr.DataFrame(value=getValues, headers=hostLogs.headers,
                             datatype=["str"]*6, wrap=True, every=0.1)
             
 
-        def callFunc(redundancyRatio, progress=gr.Progress(track_tqdm=True)):
-            _dataHandler = DataHandler('C:\\Users\\soham\\OneDrive\\Pictures\\Wallpapers\\3433.jpg')
+        def callFunc(file, redundancyRatio, progress=gr.Progress(track_tqdm=True)):
+            print(file.name, file.orig_name, redundancyRatio)
+            path, name = os.path.split(file.name)
+            _dataHandler = DataHandler(file_path=file.name, filename=file.orig_name)
+            hostLogs.commonInfoList[0][0] =str(path+"\\"+file.orig_name)
             progress(0.01, desc="Reading file", unit="percent")
             _dataHandler.read_file()
+            hostLogs.commonInfoList[0][1] = f'{len(_dataHandler.data)} Bytes'
             progress(0.05, desc="Encrypting file ", unit="percent")
             EncryptionService.encrypt(_dataHandler)
             progress(0.1, desc="Paritioning the cipher into 512KB chunks", unit="percent")
             buffer = Partitioner.partition(_dataHandler)
             progress(0.11, desc="Invoking tracker service", unit="percent")
             print("Redundancy Ratio:", redundancyRatio)
-            tracker = Tracker(fileName=_dataHandler.file_name(), bufferObj=buffer, progress=progress, redundancyRatio=redundancyRatio)
+            tracker = Tracker(fileName=_dataHandler.file_name, bufferObj=buffer, progress=progress, redundancyRatio=redundancyRatio)
             json = tracker.send_chunks()
             return gr.JSON(label="Tracker JSON", value=json)
     
-        runEvent =btsn.click(fn=callFunc, inputs=redundancyRatio,outputs=jsonViewer)
+        runEvent =btsn.click(fn=callFunc, inputs=[file, redundancyRatio],outputs=jsonViewer)
         return senderBox, runEvent
 
 
@@ -165,15 +154,15 @@ def homePage():
         with gr.Row():
             with gr.Column(scale=8):
                 gr.Markdown('<center>For Send mode upload the file to be sent & for Retreiver mode upload tracker.json file</center>')
-                file_output = gr.File()
-                uploadButton = gr.UploadButton(value="Browse Files to Send or Tracker file to retrieve")
-                uploadButton.upload(upload_file, uploadButton, file_output)
+                file = gr.File(interactive=True, label="Select File to Send or Tracker file to retrieve")
+                # uploadButton = gr.UploadButton(value="Browse Files to Send or Tracker file to retrieve")
+                # uploadButton.upload(upload_file, uploadButton, outputs=[file_output, ])
             with gr.Column(scale=6, variant='panel'):
                 redundancyRatio = gr.Slider(minimum=1,step=1, maximum=10, value=2, label="Select a redundancy ratio", interactive=True)
                 radio = gr.Radio(label="Select a mode to continue",
                          choices=["Send", "Retrieve", "Receive"])
                 startBtn = gr.Button(value="Start", elem_id='homeBtn1')
-        return homeBox, radio, redundancyRatio, startBtn
+        return homeBox, radio, redundancyRatio, startBtn, file
 
 
 with gr.Blocks(css='ui/main.css') as demo:
@@ -183,8 +172,8 @@ with gr.Blocks(css='ui/main.css') as demo:
             gr.Markdown("# Secure data storage and hiding")
         backBtn = gr.Button("Back", visible=False)
     
-    homeBox, radio, redundancyRatio, startBtn = homePage()
-    senderBox, runEvent = senderPage(redundancyRatio)
+    homeBox, radio, redundancyRatio, startBtn, file = homePage()
+    senderBox, runEvent = senderPage(redundancyRatio, file)
     receiverBox = receiverPage(redundancyRatio)
  
 

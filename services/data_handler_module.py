@@ -5,18 +5,16 @@ import ntpath
 
 class DataHandler:
     file_path: str = None
+    file_name: str = None
     data: bytes = None
     cipher: bytes = None
     AESNonce: bytes = None # Needed for decryption, Save with file
     MACtag: bytes = None   # Neeed for decryption, Save with file
 
-    def __init__(self, file_path: str = None):
+    def __init__(self, file_path: str, filename):
+        self.file_name = filename
         self.file_path = file_path
         self.printer = Printer()
-
-    def file_name(self):
-        head, tail = os.path.split(self.file_path)
-        return tail
 
     def read_file(self):
         with open(self.file_path, 'rb') as f:

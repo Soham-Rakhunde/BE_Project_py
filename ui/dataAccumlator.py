@@ -7,8 +7,13 @@ class DataLogger(metaclass=SingletonMeta):
     valueList = dict()
     finalList = [[' ',' ',' ',' ',' ',' ']]
 
+    commmonHeaders= ["File Name", "File Size(Bytes)", "Total Chunks", 'Redundancy Ratio', "Required Peers"]
+    commonInfoList = [[' ',' ',' ',' ',' ']]
+
     def flush(self):
         self.valueList = dict()
+        self.finalList = [[' ',' ',' ',' ',' ',' ']]
+        self.commonInfoList = [[' ',' ',' ',' ',' ']]
 
     def write(self, threadID: str, chunkId: str, peer_id: str, peer_addr: str, locationList: list=None):
         loc = ", ".join(locationList) if locationList else "-"

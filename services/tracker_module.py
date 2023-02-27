@@ -2,6 +2,7 @@ import io, json
 import concurrent.futures
 import os
 from peer_discovery.discoveryServiceInterface import DiscoveryServiceInterface
+from ui.dataAccumlator import DataLogger
 from ui.printer import Printer
 
 from utils.constants import *
@@ -48,6 +49,10 @@ class Tracker:
         self.bufferObj.seek(0)
         self.totalSize = self.bufferObj.getbuffer().nbytes
         self.num_of_chunks = int(self.totalSize / CHUNK_SIZE)
+        hostLogs = DataLogger()
+        hostLogs.commonInfoList[0][2] = self.num_of_chunks
+        hostLogs.commonInfoList[0][3] = self.nodes_redundancy_ratio
+        hostLogs.commonInfoList[0][4] = self.nodes_redundancy_ratio*self.num_of_chunks
 
         # TODO: Input redundancy ratio
         self.nodewise_redundancy_ratio = 2
