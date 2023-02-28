@@ -50,7 +50,7 @@ class PeerTLSInterface:
     remPublicKey = None
     timeout: int = 0
     retrievalMode: bool = False
-    localRedundancyCount = 2  # TODO
+    localRedundancyCount = 2
     locationsList: list = None
 
     threadPoolExecutor: ThreadPoolExecutor = None
@@ -125,10 +125,11 @@ class PeerTLSInterface:
         #     except:
         #         raise Exception("Incorrect cerificate password provided")
 
-    def connectToRemoteClient(self, networkPassword):
+    def connectToRemoteClient(self, networkPassword, localRedundancyCount):
+        self.localRedundancyCount = localRedundancyCount
         keyHandler = KeyHandlerUI()
         keypasswd = keyHandler.key
-
+        print(keypasswd)
         # TLS client socket object
         serverContext = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         serverContext.load_cert_chain(

@@ -72,33 +72,34 @@ def passwordPage():
            
 
 
-def receiverPage(redundancyRatio):
+def peerPage(redundancyRatio, networkPasswd):
     # DiscoveryServiceInterface()
     peerInterface = PeerTLSInterface(remoteAddress = '192.168.0.103', localPort= 11111)
 
     with gr.Box(visible=False) as receiverBox:
-        gr.Markdown("### <center> Receiver Mode </center>")   
-        def getValsList():
-            return [[f"{peerInterface.localServerAddress}:{peerInterface.localPort}", f"{peerInterface.remClientAddress}",
-                              peerInterface.localRedundancyCount, peerInterface.mode,
-                              "-" if peerInterface.locationsList == None else " ".join(peerInterface.locationsList)]]
-        gr.DataFrame(value=getValsList, headers=["Local IP Address",  "Peer IP Address", 'Local Redundancy Ratio', 'Mode', 'Locations list'], 
-                     datatype=["str"]*5, wrap=True, every=1)
+        with gr.Column():
+            gr.Markdown("### <center> Receiver Mode </center>")   
+            with gr.Row():
+                btsn = gr.Button("Send Listening")   
+            def getValsList():
+                return [[f"{peerInterface.localServerAddress}:{peerInterface.localPort}", f"{peerInterface.remClientAddress}",
+                                peerInterface.localRedundancyCount, peerInterface.mode,
+                                "-" if peerInterface.locationsList == None else " ".join(peerInterface.locationsList)]]
+            gr.DataFrame(value=getValsList, headers=["Local IP Address",  "Peer IP Address", 'Local Redundancy Ratio', 'Mode', 'Locations list'], 
+                        datatype=["str"]*5, wrap=True, every=1)
+            
+
+            def callFunc(progressBar, redundancyRatio, networkPasswd, progress=gr.Progress(track_tqdm=True)):
+                peerInterface.progress = progress
+                peerInterface.connectToRemoteClient(networkPassword=networkPasswd, localRedundancyCount=redundancyRatio)
+                return progressBar.update(value="<center> # Sucessfully Completed </center>")
+            terminalUI()
+            progressBar = gr.Markdown(value="")
+            btsn.click(fn=callFunc, inputs=[progressBar, redundancyRatio, networkPasswd],outputs=progressBar)
         
+            return receiverBox
 
-        def callFunc(progressBar, progress=gr.Progress(track_tqdm=True)):
-            print(redundancyRatio, "Sasw")
-            peerInterface.progress = progress
-            peerInterface.connectToRemoteClient(networkPassword='P@ssw0rd')
-            return progressBar.update(value="<center> # Sucessfully Completed </center>")
-        terminalUI()
-        progressBar = gr.Markdown(value="")
-        btsn = gr.Button("Run")
-        btsn.click(fn=callFunc, inputs=[progressBar, redundancyRatio],outputs=progressBar)
-    
-        return receiverBox
-
-def senderPage(redundancyRatio, file):
+def senderPage(redundancyRatio, networkPassword,  file):
 # DiscoveryServiceInterface()
     hostLogs = DataLogger()
     with gr.Box(visible=False) as senderBox:
@@ -110,13 +111,13 @@ def senderPage(redundancyRatio, file):
             def getValsList():
                 return hostLogs.commonInfoList
             gr.DataFrame(value=getValsList, headers=hostLogs.commmonHeaders, 
-                        datatype=["str"]*5, wrap=True, every=0.1)
+                        datatype=["str"] +["number"]*5, wrap=True, every=0.1)
 
-            jsonViewer = gr.JSON(visible="Progress",value=["Tracker.json yet to be generated"])
+            jsonViewer = gr.JSON(label="Progress",value=["Tracker.json yet to be generated"])
 
             with gr.Accordion(label="Terminal Main Logs"):
                 terminalUI()
-            with gr.Accordion(label="Termianl Network Logs", open=False):
+            with gr.Accordion(label="Terminal Network Logs", open=False):
                 terminalUI(log_name="hostInterface")
 
             def getValues():
@@ -127,8 +128,8 @@ def senderPage(redundancyRatio, file):
                             datatype=["str"]*6, wrap=True, every=0.1)
             
 
-        def callFunc(file, redundancyRatio, progress=gr.Progress(track_tqdm=True)):
-            print(file.name, file.orig_name, redundancyRatio)
+        def callFunc(file, networkPasswd, redundancyRatio, progress=gr.Progress(track_tqdm=True)):
+            print(file.name, file.orig_name, redundancyRatio, networkPasswd)
             path, name = os.path.split(file.name)
             _dataHandler = DataHandler(file_path=file.name, filename=file.orig_name)
             hostLogs.commonInfoList[0][0] =str(path+"\\"+file.orig_name)
@@ -142,10 +143,53 @@ def senderPage(redundancyRatio, file):
             progress(0.11, desc="Invoking tracker service", unit="percent")
             print("Redundancy Ratio:", redundancyRatio)
             tracker = Tracker(fileName=_dataHandler.file_name, bufferObj=buffer, progress=progress, redundancyRatio=redundancyRatio)
-            json = tracker.send_chunks()
+            json = tracker.send_chunks(network_passwd=networkPasswd)
             return gr.JSON(label="Tracker JSON", value=json)
-    
-        runEvent =btsn.click(fn=callFunc, inputs=[file, redundancyRatio],outputs=jsonViewer)
+        
+        runEvent =btsn.click(fn=callFunc, inputs=[file, networkPassword,redundancyRatio],outputs=jsonViewer)
+        return senderBox, runEvent
+
+
+def retrievalPage(networkPassword,  file):
+# DiscoveryServiceInterface()
+    hostLogs = DataLogger()
+    with gr.Box(visible=False) as senderBox:
+        with gr.Column():
+            gr.Markdown("### <center> Retrieval Mode </center>")
+            # with gr.Accordion(label="Tracker JSON file", open=False):
+            #     retrJSON = gr.JSON(label="Tracker JSON", value=["json"])
+            with gr.Row():
+                btsn = gr.Button("Retrieve File / Start")   
+                
+            def getValsList():
+                return hostLogs.retrieverInfoList
+            gr.DataFrame(value=getValsList, headers=hostLogs.retrieverHeaders, 
+                        datatype=["str"] +["number"]*6, wrap=True, every=0.1)
+
+            fileViewer = gr.File(visible=True,label="Progress Indicator")
+
+            with gr.Accordion(label="Terminal Main Logs"):
+                terminalUI()
+            with gr.Accordion(label="Terminal Network Logs", open=False):
+                terminalUI(log_name="hostInterface")
+
+            def getValues():
+                return hostLogs.finalList
+
+            with gr.Accordion(label="Peers Status", open=True):
+                gr.DataFrame(value=getValues, headers=hostLogs.headers,
+                            datatype=["str"]*6, wrap=True, every=0.1)
+            
+
+        def callFunc(file, networkPasswd, progress=gr.Progress(track_tqdm=True)):
+            path, name = os.path.split(file.name)
+            hostLogs.retrieverInfoList[0][0] =str(path+"\\"+file.orig_name)
+
+            ret = RetrieverModule(tracker_path=file.name, network_passwd=networkPasswd)
+            save_loc = ret.retrieve()
+            return gr.File(label=f"Retrieved File: {save_loc}", value=save_loc)
+        
+        runEvent =btsn.click(fn=callFunc, inputs=[file, networkPassword],outputs=fileViewer)
         return senderBox, runEvent
 
 
@@ -156,8 +200,9 @@ def homePage():
             with gr.Row():
                 with gr.Column(scale=5, variant='panel'):
                     radio = gr.Radio(label="Modes", type="index",
-                                choices=["Send/Store files", "Retrieve file", "Receiver Mode"])
+                                choices=["Send/Store files", "Retrieve file", "Peer Mode"])
                     file = gr.File(interactive=True, label="Select File to Send or Tracker file to retrieve", visible=False)
+                    jsonFile = gr.File(interactive=True, label="Select File to Send or Tracker file to retrieve", visible=False, file_types=['.json'])
                     
                 with gr.Column(scale=5):
                     networkPassword = gr.Textbox(label="Enter Network Passphrase", placeholder='Network Passphrase')
@@ -170,28 +215,29 @@ def homePage():
 
             def onRadioChange(radioIndex):
                 if radioIndex == 0:
-                    return [file.update(visible=True), redundancyRatio.update(visible=True, label="Select a node_wise redundancy ratio"), startBtn.update(visible=True)]
+                    return [file.update(visible=True), jsonFile.update(visible=False), redundancyRatio.update(visible=True, label="Select a node_wise redundancy ratio"), startBtn.update(visible=True)]
                 elif radioIndex == 1:
-                    return [file.update(visible=True), redundancyRatio.update(visible=True, label="Select a node_wise redundancy ratio"), startBtn.update(visible=True)]
+                    return [file.update(visible=False), jsonFile.update(visible=True), redundancyRatio.update(visible=False, label="Select a node_wise redundancy ratio"), startBtn.update(visible=True)]
                 elif radioIndex == 2:
-                    return [file.update(visible=False), redundancyRatio.update(visible=True, label="Select a local redundancy ratio"), startBtn.update(visible=True)]
+                    return [file.update(visible=False), jsonFile.update(visible=False), redundancyRatio.update(visible=True, label="Select a local redundancy ratio"), startBtn.update(visible=True)]
                 else:
-                    return [file.update(visible=False), redundancyRatio.update(visible=False), startBtn.update(visible=False)]
+                    return [file.update(visible=False), jsonFile.update(visible=False), redundancyRatio.update(visible=False), startBtn.update(visible=False)]
                 
-            radio.change(onRadioChange, inputs=radio, outputs=[file, redundancyRatio, startBtn])
+            radio.change(onRadioChange, inputs=radio, outputs=[file, jsonFile, redundancyRatio, startBtn])
 
 
-            def onFileChange(file):
+            def onFileChange(file, jsonFile):
                 if file is not None and file.orig_name.lower().endswith(('.png', '.jpg', '.jpeg', '.tiff', '.bmp', '.gif')):
                     return [preview.update(value=file.name,visible=True), jsonPreview.update(visible=False)]
-                elif file is not None and file.orig_name.lower().endswith(('.json')):
-                    with open(file.name, 'r') as openfile:
+                elif jsonFile is not None and jsonFile.orig_name.lower().endswith(('.json')):
+                    with open(jsonFile.name, 'r') as openfile:
                         return [preview.update(visible=False), jsonPreview.update(value=json.load(openfile), visible=True)]
                 else:
                     return [preview.update(visible=False), jsonPreview.update(visible=False)]
                 
-            file.change(onFileChange, inputs=file, outputs=[preview, jsonPreview])
-        return homeBox, radio, redundancyRatio, startBtn, file, networkPassword
+            file.change(onFileChange, inputs=[file,jsonFile], outputs=[preview, jsonPreview])
+            jsonFile.change(onFileChange, inputs=[file,jsonFile], outputs=[preview, jsonPreview])
+        return homeBox, radio, redundancyRatio, startBtn, file, jsonFile, networkPassword
 
 
 with gr.Blocks(css='ui/main.css') as demo:
@@ -201,29 +247,35 @@ with gr.Blocks(css='ui/main.css') as demo:
             gr.Markdown("# Secure data storage and hiding")
         backBtn = gr.Button("Back", visible=False)
     
-    homeBox, radio, redundancyRatio, startBtn, file, networkPassword = homePage()
-    senderBox, runEvent = senderPage(redundancyRatio, file)
-    receiverBox = receiverPage(redundancyRatio)
+    homeBox, radio, redundancyRatio, startBtn, file, jsonFile, networkPassword = homePage()
 
+    senderBox, runEvent = senderPage(redundancyRatio, networkPassword, file)
+    retrievalBox, runEvent2 = retrievalPage(networkPassword, jsonFile)
+    receiverBox = peerPage(redundancyRatio, networkPassword)
 
  
 
-    def openPage(radio):
-        if radio == 2:
-            return [homeBox.update(visible=False), senderBox.update(visible=False), receiverBox.update(visible=True), backBtn.update(visible=True)]
-        elif radio == 0:
-            return [homeBox.update(visible=False), senderBox.update(visible=True), receiverBox.update(visible=False), backBtn.update(visible=True)]
+    def openPage(radio,jsonFile):
+        if radio == 0:
+            return [homeBox.update(visible=False), senderBox.update(visible=True), retrievalBox.update(visible=False), receiverBox.update(visible=False), backBtn.update(visible=True)]
+        elif radio == 1:
+            if jsonFile is not None and jsonFile.orig_name.lower().endswith(('.json')):
+                return [homeBox.update(visible=False), senderBox.update(visible=False), retrievalBox.update(visible=True), receiverBox.update(visible=False), backBtn.update(visible=True)]
+            else:
+                return [homeBox, senderBox, retrievalBox, receiverBox, backBtn]
+        elif radio == 2:
+            return [homeBox.update(visible=False), senderBox.update(visible=False), retrievalBox.update(visible=False), receiverBox.update(visible=True), backBtn.update(visible=True)]
 
-    startBtn.click(openPage, inputs=radio ,outputs=[homeBox, senderBox, receiverBox, backBtn])
+    startBtn.click(openPage, inputs=[radio, jsonFile] ,outputs=[homeBox, senderBox, retrievalBox, receiverBox, backBtn])
 
     def backBtnHandler(radio):
         printer = Printer()
         printer.flush()
         hostLogs = DataLogger()
         hostLogs.flush()
-        return [homeBox.update(visible=True), senderBox.update(visible=False), receiverBox.update(visible=False), backBtn.update(visible=False)]
+        return [homeBox.update(visible=True), senderBox.update(visible=False), retrievalBox.update(visible=False), receiverBox.update(visible=False), backBtn.update(visible=False)]
     
-    backBtn.click(backBtnHandler, inputs=radio ,outputs=[homeBox, senderBox, receiverBox, backBtn], cancels=[runEvent])
+    backBtn.click(backBtnHandler, inputs=radio ,outputs=[homeBox, senderBox, retrievalBox, receiverBox, backBtn], cancels=[runEvent, runEvent2])
 
 demo.queue()
 

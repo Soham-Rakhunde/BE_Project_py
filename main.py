@@ -16,15 +16,15 @@ def sender():
     buffer = Partitioner.partition(_dataHandler)
     print("Tracker")
     tracker = Tracker(bufferObj=buffer)
-    tracker.send_chunks()
+    tracker.send_chunks(network_passwd="P@ssw0rd")
 
 def retriever():
-    ret = RetrieverModule(tracker_path='Temp/tracker.json')
+    ret = RetrieverModule(tracker_path='Temp/tracker.json', network_passwd="P@ssw0rd")
     ret.retrieve()
 
 def act_as_peer():
     ob = PeerTLSInterface(remoteAddress = '192.168.0.103', localPort= 11111)
-    ob.connectToRemoteClient(networkPassword='P@ssw0rd')
+    ob.connectToRemoteClient(networkPassword='P@ssw0rd', localRedundancyCount=2)
 
 
 

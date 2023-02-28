@@ -20,14 +20,20 @@ class Tracker:
         if self.progress != None:
             self.progress(percent/100, desc=desc, unit="percent")
 
-    def progress_tqdm(self, iter, desc, unit):
+    def progress_tqdm(self, iter, desc, unit, total=None):
         if self.progress != None:
-            return self.progress.tqdm(iter, desc=desc, unit=unit)
+            return self.progress.tqdm(iter, desc=desc, unit=unit, total=total)
         else:
             return iter
 
 
-    def __init__(self,bufferObj: io.BufferedIOBase, redundancyRatio = 2, fileName:str ="FileName.jpeg",progress: gr.Progress = None) -> None:
+    def __init__(
+        self,
+        bufferObj: io.BufferedIOBase, 
+        redundancyRatio = 2, 
+        fileName:str ="FileName.jpeg",
+        progress: gr.Progress = None
+    ) -> None:
         self.bufferObj = bufferObj
         discovery = DiscoveryServiceInterface()
         discovery.retrieve_peers()
@@ -45,14 +51,14 @@ class Tracker:
             return False
         return True
 
-    def send_chunks(self):
+    def send_chunks(self, network_passwd):
         self.bufferObj.seek(0)
         self.totalSize = self.bufferObj.getbuffer().nbytes
         self.num_of_chunks = int(self.totalSize / CHUNK_SIZE)
         hostLogs = DataLogger()
         hostLogs.commonInfoList[0][2] = self.num_of_chunks
-        hostLogs.commonInfoList[0][3] = self.nodes_redundancy_ratio
-        hostLogs.commonInfoList[0][4] = self.nodes_redundancy_ratio*self.num_of_chunks
+        hostLogs.commonInfoList[0][4] = self.nodes_redundancy_ratio
+        hostLogs.commonInfoList[0][5] = self.nodes_redundancy_ratio*self.num_of_chunks
 
         # TODO: Input redundancy ratio
         self.nodewise_redundancy_ratio = 2
@@ -99,19 +105,16 @@ class Tracker:
                     )
                     self.printer.write(
                         name=f'Chunk-{chunk_id}:Peer-{peer_number}:Tracker', msg=f'Generated HMAC for chunk {chunk_id} with 128 bit key')
-                    future = executor.submit(sendHandler.connectToRemoteServer, networkPassword ='P@ssw0rd')
+                    future = executor.submit(sendHandler.connectToRemoteServer, networkPassword =network_passwd)
                 
                     # sendHandler.connectToRemoteServer(remotepassword='P@ssw0rd')
                     # future = sendHandler.locationFuture
-                    print("BLOJ ", peer_number)
                     futuresDict[future] = {
                         'id': chunk_id,
                         'hmac':  hmac, 
                         'address': self.peersList[peer_number]['ip'],
                         'mac_addr': self.peersList[peer_number]['mac']
                     }
-                    print("LOJ ", peer_number)
-                print("LOOP ", chunk_id)
             
             self.printer.write(name="Tracker", msg=f"Generating and saving tracker JSON file as {self.fileName.split('.')[0]}.json")
             trackerJson =self.trackerFileCreator(futuresDict)
@@ -127,10 +130,16 @@ class Tracker:
 
         # print(next(filter(lambda chunk: chunk['id'] == futuresDict[fut]['id'], trackerJSON['chunks'])))
 
-
-        for fut in self.progress_tqdm(iter=concurrent.futures.as_completed(futuresDict), desc="Waiting for all threads to finish", unit='Threads'): 
-            print(fut.result())
-
+        
+        for fut in self.progress_tqdm(
+            iter=concurrent.futures.as_completed(futuresDict), 
+            desc="Waiting for all threads to finish", 
+            unit='Threads', 
+            total=len(futuresDict)
+        ): 
+            hostLogs = DataLogger()
+            hostLogs.commonInfoList[0][3] += 1
+            # print(fut.result())
             try: # if id present then update inital entry
                 chunkTrackerEntry = next(filter(lambda chunk: chunk['id'] == futuresDict[fut]['id'], trackerJSON['chunks']))
                 chunkTrackerEntry['peers'].append({

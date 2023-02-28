@@ -7,8 +7,11 @@ class DataLogger(metaclass=SingletonMeta):
     valueList = dict()
     finalList = [[' ',' ',' ',' ',' ',' ']]
 
-    commmonHeaders= ["File Name", "File Size(Bytes)", "Total Chunks", 'Redundancy Ratio', "Required Peers"]
-    commonInfoList = [[' ',' ',' ',' ',' ']]
+    commmonHeaders= ["File Name", "File Size(Bytes)", "Total Chunks", "Completed", 'Redundancy Ratio', "Required Peers"]
+    commonInfoList = [[' ',0,0,0,0,0]]
+
+    retrieverHeaders= ["File Name", "Total Chunks", "Completed", "Active Peers with Chunks", "Redundant Peers", "Unsuccesful attempts","Inactive Peers"]
+    retrieverInfoList = [[' ',0,0,0,0, 0, 0]]
 
     def flush(self):
         self.valueList = dict()
