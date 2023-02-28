@@ -8,9 +8,6 @@
 
 # Items necessary to perform operations with private/public keys
 from concurrent.futures import ThreadPoolExecutor
-import io
-import pathlib
-import pickle
 import threading
 from services.hmac_module import HMAC_Module
 from ui.dataAccumlator import DataLogger
@@ -19,20 +16,16 @@ from utils.constants import CHUNK_SIZE, TLS_MAX_SIZE
 from utils.socket_util_functions import receiveLocationsList, receivePayload, sendLocationsList, sendMsg
 from utils.tls_util_functions import *
 
-# Symmetric key generation
-import cryptography.fernet
-from cryptography.fernet import Fernet
-
 # Python server/client module, as well as ssl module to wrap the socket in TLS
 import socket
 import ssl
 
 # Detecting whether the script is running in Windows or otherwise by importing the msvcrt module
-try:
-    import msvcrt
-    win = 1
-except:
-    win = 0
+# try:
+#     import msvcrt
+#     win = 1
+# except:
+#     win = 0
 
 # GUI inports
 # import tkinter as tk    #Standard python GUI library
@@ -103,7 +96,7 @@ class HostTLSInterface:
             log_name="hostInterface"
         )
 
-    def connectToRemoteServer(self, remotepassword):
+    def connectToRemoteServer(self, networkPassword):
         self.threadName = threading.get_native_id()
         self.uiDataLogs.write(threadID=self.threadName, chunkId=self.chunkId, peer_id=self.peerId, peer_addr=self.remServerAddress, locationList=self.locationsList)
         self.printMsg(
@@ -184,7 +177,7 @@ class HostTLSInterface:
 
         h = hashes.Hash(self.passwd_hashingAlgorithm,
                         backend=default_backend())
-        h.update(bytes(remotepassword, 'utf8'))
+        h.update(bytes(networkPassword, 'utf8'))
         remotePasswordHash = h.finalize()
 
         attempts = 0
@@ -208,20 +201,20 @@ class HostTLSInterface:
             else:
                 print("C: Password rejected by remote host")
                 self.printMsg(msg="Password rejected by remote host")
-
-                attempts += 1
-                if attempts < self.passwd_attempts:
-                    # Provide a tkinter input if running gui, or exit the program on wrong attempt
-                    if not self.args:
-                        remotepassword = self.passwordWindow()
-                        if not remotepassword:
-                            self.clientSocket.close()
-                            return
-                    else:
-                        self.clientSocket.close()
-                        return
-                    if remotepassword == None:
-                        return
+                return
+                # attempts += 1
+                # if attempts < self.passwd_attempts:
+                #     # Provide a tkinter input if running gui, or exit the program on wrong attempt
+                #     if not self.args:
+                #         networkPassword = self.passwordWindow()
+                #         if not networkPassword:
+                #             self.clientSocket.close()
+                #             return
+                #     else:
+                #         self.clientSocket.close()
+                #         return
+                #     if networkPassword == None:
+                #         return
 
         # Exit if client authentication failed
         if not self.passAuth:

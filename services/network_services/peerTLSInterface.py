@@ -21,19 +21,17 @@ from utils.socket_util_functions import receiveLocationsList, receiveMsg, receiv
 from utils.tls_util_functions import *
 import gradio as gr
 
-# Symmetric key generation
-from cryptography.fernet import Fernet
 
 # Python server/client module, as well as ssl module to wrap the socket in TLS
 import socket
 import ssl
 
 # Detecting whether the script is running in Windows or otherwise by importing the msvcrt module
-try:
-    import msvcrt
-    win = 1
-except:
-    win = 0
+# try:
+#     import msvcrt
+#     win = 1
+# except:
+#     win = 0
 
 # Multithreading for simultaneously sending and recieving messages
 import threading
@@ -127,7 +125,10 @@ class PeerTLSInterface:
         #     except:
         #         raise Exception("Incorrect cerificate password provided")
 
-    def connectToRemoteClient(self, keypasswd, hostpassword, remotepassword):
+    def connectToRemoteClient(self, networkPassword):
+        keyHandler = KeyHandlerUI()
+        keypasswd = keyHandler.key
+
         # TLS client socket object
         serverContext = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         serverContext.load_cert_chain(
@@ -223,13 +224,13 @@ class PeerTLSInterface:
         self.progress_update(
             7, desc=f'Connection established with {self.remClientAddress[0]}')
 
-    #     self.payloadFuture = self.threadPoolExecutor.submit(self.authenticateAndReveive, hostpassword, keypasswd)
+    #     self.payloadFuture = self.threadPoolExecutor.submit(self.authenticateAndReveive, networkPassword, keypasswd)
     # commentng for testing receive functionality
-    # def authenticateAndReveive(self, hostpassword, keypasswd):
+    # def authenticateAndReveive(self, networkPassword, keypasswd):
         # print("S: Thread Spawned")
         # Generate keypair for password exchange
         # key = makeKey()
-        key = retrieveKey(passwd=keypasswd)
+        key = retrieveKey()
         print("S: Retrieved Keypair")
         self.printer.write(name='S', msg=f"Retrieved Keypair")
 
@@ -238,7 +239,7 @@ class PeerTLSInterface:
         # Hash the passwords before sending them over the wire
         h = hashes.Hash(self.passwd_hashingAlgorithm,
                         backend=default_backend())
-        h.update(bytes(hostpassword, 'utf8'))
+        h.update(bytes(networkPassword, 'utf8'))
         hostPasswordHash = h.finalize()
         # h = hashes.Hash(self.passwd_hashingAlgorithm,backend=default_backend())
         # h.update(bytes(remotepassword,'utf8'))

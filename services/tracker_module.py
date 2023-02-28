@@ -99,7 +99,7 @@ class Tracker:
                     )
                     self.printer.write(
                         name=f'Chunk-{chunk_id}:Peer-{peer_number}:Tracker', msg=f'Generated HMAC for chunk {chunk_id} with 128 bit key')
-                    future = executor.submit(sendHandler.connectToRemoteServer, remotepassword ='P@ssw0rd')
+                    future = executor.submit(sendHandler.connectToRemoteServer, networkPassword ='P@ssw0rd')
                 
                     # sendHandler.connectToRemoteServer(remotepassword='P@ssw0rd')
                     # future = sendHandler.locationFuture

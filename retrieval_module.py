@@ -93,7 +93,7 @@ class RetrieverModule:
                     hmac=curChunk['hmac']
                 ) #port change TODO
                 self.portadd +=1
-                fut = executor.submit(receiver.connectToRemoteServer, remotepassword ='P@ssw0rd')
+                fut = executor.submit(receiver.connectToRemoteServer, networkPassword ='P@ssw0rd')
                 
                 if fut != None:
                     self.buffers[fut] = curChunk['id']

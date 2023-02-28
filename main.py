@@ -24,7 +24,7 @@ def retriever():
 
 def act_as_peer():
     ob = PeerTLSInterface(remoteAddress = '192.168.0.103', localPort= 11111)
-    ob.connectToRemoteClient(keypasswd='G00dP@ssw0rd', hostpassword ='P@ssw0rd',remotepassword ='P@ssw0rd')
+    ob.connectToRemoteClient(networkPassword='P@ssw0rd')
 
 
 

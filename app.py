@@ -89,7 +89,7 @@ def receiverPage(redundancyRatio):
         def callFunc(progressBar, progress=gr.Progress(track_tqdm=True)):
             print(redundancyRatio, "Sasw")
             peerInterface.progress = progress
-            peerInterface.connectToRemoteClient(keypasswd='G00dP@ssw0rd', hostpassword ='P@ssw0rd',remotepassword ='P@ssw0rd')
+            peerInterface.connectToRemoteClient(networkPassword='P@ssw0rd')
             return progressBar.update(value="<center> # Sucessfully Completed </center>")
         terminalUI()
         progressBar = gr.Markdown(value="")
@@ -151,18 +151,47 @@ def senderPage(redundancyRatio, file):
 
 def homePage():
     with gr.Box(visible= True) as homeBox:
-        with gr.Row():
-            with gr.Column(scale=8):
-                gr.Markdown('<center>For Send mode upload the file to be sent & for Retreiver mode upload tracker.json file</center>')
-                file = gr.File(interactive=True, label="Select File to Send or Tracker file to retrieve")
-                # uploadButton = gr.UploadButton(value="Browse Files to Send or Tracker file to retrieve")
-                # uploadButton.upload(upload_file, uploadButton, outputs=[file_output, ])
-            with gr.Column(scale=6, variant='panel'):
-                redundancyRatio = gr.Slider(minimum=1,step=1, maximum=10, value=2, label="Select a redundancy ratio", interactive=True)
-                radio = gr.Radio(label="Select a mode to continue",
-                         choices=["Send", "Retrieve", "Receive"])
-                startBtn = gr.Button(value="Start", elem_id='homeBtn1')
-        return homeBox, radio, redundancyRatio, startBtn, file
+        gr.Markdown('#### <center>Select a mode to continue</center>')
+        with gr.Column(scale=8):
+            with gr.Row():
+                with gr.Column(scale=5, variant='panel'):
+                    radio = gr.Radio(label="Modes", type="index",
+                                choices=["Send/Store files", "Retrieve file", "Receiver Mode"])
+                    file = gr.File(interactive=True, label="Select File to Send or Tracker file to retrieve", visible=False)
+                    
+                with gr.Column(scale=5):
+                    networkPassword = gr.Textbox(label="Enter Network Passphrase", placeholder='Network Passphrase')
+                    
+                    redundancyRatio = gr.Slider(minimum=1,step=1, maximum=10, value=2, label="Select a redundancy ratio", interactive=True, visible=False)
+            startBtn = gr.Button(value="Continue", elem_id='homeBtn1', visible=False)
+            startBtn.style(full_width=False)
+            preview = gr.Image(visible=False)
+            jsonPreview = gr.JSON(visible=False)
+
+            def onRadioChange(radioIndex):
+                if radioIndex == 0:
+                    return [file.update(visible=True), redundancyRatio.update(visible=True, label="Select a node_wise redundancy ratio"), startBtn.update(visible=True)]
+                elif radioIndex == 1:
+                    return [file.update(visible=True), redundancyRatio.update(visible=True, label="Select a node_wise redundancy ratio"), startBtn.update(visible=True)]
+                elif radioIndex == 2:
+                    return [file.update(visible=False), redundancyRatio.update(visible=True, label="Select a local redundancy ratio"), startBtn.update(visible=True)]
+                else:
+                    return [file.update(visible=False), redundancyRatio.update(visible=False), startBtn.update(visible=False)]
+                
+            radio.change(onRadioChange, inputs=radio, outputs=[file, redundancyRatio, startBtn])
+
+
+            def onFileChange(file):
+                if file is not None and file.orig_name.lower().endswith(('.png', '.jpg', '.jpeg', '.tiff', '.bmp', '.gif')):
+                    return [preview.update(value=file.name,visible=True), jsonPreview.update(visible=False)]
+                elif file is not None and file.orig_name.lower().endswith(('.json')):
+                    with open(file.name, 'r') as openfile:
+                        return [preview.update(visible=False), jsonPreview.update(value=json.load(openfile), visible=True)]
+                else:
+                    return [preview.update(visible=False), jsonPreview.update(visible=False)]
+                
+            file.change(onFileChange, inputs=file, outputs=[preview, jsonPreview])
+        return homeBox, radio, redundancyRatio, startBtn, file, networkPassword
 
 
 with gr.Blocks(css='ui/main.css') as demo:
@@ -172,15 +201,17 @@ with gr.Blocks(css='ui/main.css') as demo:
             gr.Markdown("# Secure data storage and hiding")
         backBtn = gr.Button("Back", visible=False)
     
-    homeBox, radio, redundancyRatio, startBtn, file = homePage()
+    homeBox, radio, redundancyRatio, startBtn, file, networkPassword = homePage()
     senderBox, runEvent = senderPage(redundancyRatio, file)
     receiverBox = receiverPage(redundancyRatio)
+
+
  
 
     def openPage(radio):
-        if radio == "Receive":
+        if radio == 2:
             return [homeBox.update(visible=False), senderBox.update(visible=False), receiverBox.update(visible=True), backBtn.update(visible=True)]
-        elif radio == "Send":
+        elif radio == 0:
             return [homeBox.update(visible=False), senderBox.update(visible=True), receiverBox.update(visible=False), backBtn.update(visible=True)]
 
     startBtn.click(openPage, inputs=radio ,outputs=[homeBox, senderBox, receiverBox, backBtn])
@@ -188,6 +219,8 @@ with gr.Blocks(css='ui/main.css') as demo:
     def backBtnHandler(radio):
         printer = Printer()
         printer.flush()
+        hostLogs = DataLogger()
+        hostLogs.flush()
         return [homeBox.update(visible=True), senderBox.update(visible=False), receiverBox.update(visible=False), backBtn.update(visible=False)]
     
     backBtn.click(backBtnHandler, inputs=radio ,outputs=[homeBox, senderBox, receiverBox, backBtn], cancels=[runEvent])
