@@ -1,8 +1,6 @@
 import os
 from base64 import b64encode
 from utils.singleton_meta import SingletonMeta
-# from Crypto.Protocol.KDF import PBKDF2
-# from Crypto.Hash import SHA512
 from Crypto.Random import get_random_bytes
 import pyargon2
 
@@ -65,7 +63,7 @@ class KeyHandlerUI(metaclass=SingletonMeta):
     # file_name: str = 'key_n_salt.bin'
     # TODO ONLY SAVE the salt
     # path = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop') + '\\' + file_name
-    path = 'Identity/salt2.bin'
+    path = 'Identity/salt.bin'
 
     
     def is_password_created(self):
@@ -77,12 +75,7 @@ class KeyHandlerUI(metaclass=SingletonMeta):
     def generate(self, password: str):
         self.salt = get_random_bytes(self.SALT_SIZE)
         self.key = pyargon2.hash(password, str(b64encode(self.salt)), hash_len=self.KEY_SIZE, encoding='raw')
-        # self.key = PBKDF2(password.encode("utf8"), self.salt, 32, count=1000000, hmac_hash_module=SHA512)
-        # print("Derived key:", binascii.hexlify(self.key))
-
-
-# TODO remove key and ask password everytime to derive the key
-
+        
     def save(self):
         if not os.path.isdir('Identity'):
             os.mkdir('Identity')    
