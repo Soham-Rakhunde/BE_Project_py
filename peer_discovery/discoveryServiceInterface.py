@@ -1,11 +1,10 @@
 import socket
 import urllib.request
 import re, uuid
-import json,sys
+import json
 from subprocess import check_output
 import platform
-from ui.printer import Printer
-
+import gradio as gr
 from utils.singleton_meta import SingletonMeta
 
 # class SingletonMeta(type):
@@ -31,13 +30,14 @@ class DiscoveryServiceInterface(metaclass=SingletonMeta):
     server_ip = '127.0.0.1'
     server_port = 11100
     mac_add =  (':'.join(re.findall('..', '%012x' % uuid.getnode())))
-    external_ip = urllib.request.urlopen('https://v4.ident.me').read().decode('utf8')
-
+    try:
+        external_ip = urllib.request.urlopen('https://v4.ident.me').read().decode('utf8')
+    except:
+        raise gr.Error("Not connected to any network")
     
     # print(socket.gethostbyname_ex(hostname))
     # IPAddr = socket.gethostbyname_ex(hostname)[2][0]
     
-
     if platform.uname().system == 'Windows':
         hostname = socket.gethostname()
         IPAddr = socket.gethostbyname(hostname)
