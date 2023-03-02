@@ -52,7 +52,7 @@ def senderPage(redundancyRatio, networkPassword,  file):
             buffer = Partitioner.partition(_dataHandler)
             progress(0.11, desc="Invoking tracker service", unit="percent")
             print("Redundancy Ratio:", redundancyRatio)
-            tracker = Tracker(fileName=_dataHandler.file_name, bufferObj=buffer,
+            tracker = Tracker(fileName=file.orig_name, bufferObj=buffer,
                               progress=progress, redundancyRatio=redundancyRatio)
             json = tracker.send_chunks(network_passwd=networkPasswd)
             return gr.JSON(label="Tracker JSON", value=json)

@@ -5,6 +5,7 @@ import json
 from subprocess import check_output
 import platform
 import gradio as gr
+from ui.printer import Printer
 from utils.singleton_meta import SingletonMeta
 
 # class SingletonMeta(type):
@@ -40,10 +41,10 @@ class DiscoveryServiceInterface(metaclass=SingletonMeta):
     
     if platform.uname().system == 'Windows':
         hostname = socket.gethostname()
-        IPAddr = socket.gethostbyname(hostname)
+        IPAddr = socket.gethostbyname_ex(hostname)[-1][-1]
     else: 
         IPAddr = str(check_output(['hostname', '--all-ip-addresses']))[2:-4]
-
+    print(IPAddr)
 
     
 
@@ -100,9 +101,8 @@ class DiscoveryServiceInterface(metaclass=SingletonMeta):
         self.printer.write(name='Discovery', msg=f"Closing conneciton")
         self.clientMultiSocket.close()
 
-# if __name__ == "__main__":
-#     d = DiscoveryServiceInterface()
+if __name__ == "__main__":
+    d = DiscoveryServiceInterface()
 
-#     d.retrieve_peers()
-#     d.retreive_known_peers([d.mac_add])
-#     d.retreive_known_peers([d.mac_add, d.mac_add])
+    d.retrieve_peers()
+    d.retreive_known_peers([d.mac_add])

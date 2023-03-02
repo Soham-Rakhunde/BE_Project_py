@@ -18,8 +18,9 @@ def retrievalPage(networkPassword,  file):
             gr.DataFrame(value=getValsList, headers=hostLogs.retrieverHeaders,
                          datatype=["str"] + ["number"]*6, wrap=True, every=0.1)
 
-            fileViewer = gr.File(visible=True, label="Progress Indicator")
-
+            # fileViewer = gr.File(visible=True, label="Progress Indicator")
+            
+            progressBar = gr.Markdown(value="")
             with gr.Accordion(label="Terminal Main Logs"):
                 terminalUI()
             with gr.Accordion(label="Terminal Network Logs", open=False):
@@ -39,8 +40,9 @@ def retrievalPage(networkPassword,  file):
             ret = RetrieverModule(tracker_path=file.name,
                                   network_passwd=networkPasswd)
             save_loc = ret.retrieve()
-            return gr.File(label=f"Retrieved File: {save_loc}", value=save_loc)
+            return progressBar.update(value=f"## <center> Sucessfully Completed and file saved at {save_loc}</center>")
+            # return gr.File(label=f"Retrieved File: {save_loc}", value=save_loc)
 
         runEvent = btsn.click(fn=callFunc, inputs=[
-                              file, networkPassword], outputs=fileViewer)
+                              file, networkPassword], outputs=progressBar)
         return senderBox, runEvent

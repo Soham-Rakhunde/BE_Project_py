@@ -109,9 +109,6 @@ class PeerTLSInterface:
             os.mkdir('Identity')
         if not os.path.isdir('RemoteCerts'):
             os.mkdir('RemoteCerts')
-        # Generate self-signed certificate if it doesn't exist
-        makeCert()
-
         # Check that the port number is above 1000, and that all other inputs have something there before proceeding
         if not type(localPort) == int:
             raise Exception("Port number must be an integer value >= 1000")
@@ -126,6 +123,9 @@ class PeerTLSInterface:
         #         raise Exception("Incorrect cerificate password provided")
 
     def connectToRemoteClient(self, networkPassword, localRedundancyCount):
+        # Generate self-signed certificate if it doesn't exist
+        makeCert()
+
         self.localRedundancyCount = localRedundancyCount
         keyHandler = KeyHandlerUI()
         keypasswd = keyHandler.key

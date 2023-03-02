@@ -1,4 +1,5 @@
 import gradio as gr
+from peer_discovery.discoveryServiceInterface import DiscoveryServiceInterface
 from services.key_handling_module import KeyHandlerUI
 
 from ui.dataAccumlator import DataLogger
@@ -11,7 +12,7 @@ from ui.pages.senderPage import senderPage
 
 
 with gr.Blocks(css='ui/main.css') as demo:
-    # DiscoveryServiceInterface()
+    DiscoveryServiceInterface()
     with gr.Row():
         with gr.Column(scale=6,):
             gr.Markdown("# Secure data storage and hiding (Group 74)")

@@ -67,8 +67,8 @@ class Tracker:
         self.printer.write(
             name='Tracker', msg='Excecption: Too high redundancy ratio')
 
-        if not self.is_compatible_reduncancy_ratio():
-            return
+        # if not self.is_compatible_reduncancy_ratio():
+        #     return
 
         futuresDict = dict()
         with concurrent.futures.ThreadPoolExecutor() as executor:
@@ -162,6 +162,6 @@ class Tracker:
         self.progress_update(percent=95, desc="Sent and received acknowledgements for all chunks from all peers")
         if not os.path.isdir('Temp'):
             os.mkdir('Temp')
-        with open(f'Temp/{self.fileName.split(".")[0]}.json', 'w') as file:
+        with open(f'Temp/tracker.json', 'w') as file:
             json.dump(trackerJSON, file)
         return trackerJSON

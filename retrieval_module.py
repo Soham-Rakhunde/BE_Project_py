@@ -25,9 +25,9 @@ class RetrieverModule:
         if self.progress != None:
             self.progress(percent/100, desc=desc, unit="percent")
 
-    def progress_tqdm(self, iter, desc, unit):
+    def progress_tqdm(self, iter, desc, unit, total=None):
         if self.progress != None:
-            return self.progress.tqdm(iter, desc=desc, unit=unit)
+            return self.progress.tqdm(iter, desc=desc, unit=unit, total=total)
         else:
             return iter
 
@@ -101,17 +101,18 @@ class RetrieverModule:
         self.printer.write(name='Retriever', msg="Ordering and merging all chunks into one buffer")
         self.progress_update(percent=85, desc="Merged all chunk in correct order into one buffer")
 
-        _dataHandler = DataHandler()
-        self.progress_update(percent=88, desc="Decoding the buffer...")
-        _dataHandler.decode(buffer=mergedBuffer)
-        
-        self.progress_update(percent=92, desc="Decrypting the cipher...")
-        EncryptionService.decrypt(_dataHandler)
         
         if platform.uname().system == 'Windows':
             path = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop') 
         else: 
             path = os.path.join(os.path.join(os.path.expanduser('~')), 'Desktop') 
+
+        _dataHandler = DataHandler(file_path=path, filename="srwe.png")
+        self.progress_update(percent=88, desc="Decoding the buffer...")
+        _dataHandler.decode(buffer=mergedBuffer)
+        
+        self.progress_update(percent=92, desc="Decrypting the cipher...")
+        EncryptionService.decrypt(_dataHandler)
 
         self.progress_update(percent=98, desc=f"Saving file as {path}\{self.trackerJSON['name']}")
         _dataHandler.write_file( save_path = f'{path}\{self.trackerJSON["name"]}')

@@ -28,6 +28,7 @@ def makeKey():
         backend=default_backend()
     )
     public_key = private_key.public_key()
+    writeKey(private_key)
     return {'private':private_key,'public':public_key}
 
 
@@ -85,12 +86,12 @@ def writeKey(priv):
         f.write(priv)
 
 def retrieveKey():
-    keyHandler = KeyHandlerUI()
+    keyHandler = KeyHandlerUI() 
     passwd = keyHandler.key
     with open("Identity/private_key.pem", "rb") as key_file:
         private_key = serialization.load_pem_private_key(
             data=key_file.read(),
-            password=bytes(passwd, encoding='utf-8'),
+            password=passwd, #bytes(passwd, encoding='utf-8'),
             backend=default_backend()
         )
         public_key = private_key.public_key()
@@ -136,7 +137,7 @@ def makeCert():
             fp.write(cert.public_bytes(serialization.Encoding.PEM))
 
         #Write private key to file
-        writeKey(key)
+        # writeKey(key)
 
 
 def verifyCert(remPubKey, remCert):
