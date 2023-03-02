@@ -48,37 +48,37 @@ class DiscoveryServiceInterface(metaclass=SingletonMeta):
     
 
     def __init__(self):
-        self.peersList = [
-            {'ip': '192.168.60.216', 'port':11111, 'mac':'44:AF:28:F2:EB:3A'},
-            {'ip': '192.168.60.216', 'port':11112, 'mac':'44:AF:28:F2:EB:3A'},
-            {'ip': '192.168.60.216', 'port':11113, 'mac':'44:AF:28:F2:EB:3A'},
-            {'ip': '192.168.60.216', 'port':11114, 'mac':'44:AF:28:F2:EB:3A'},
-            {'ip': '192.168.60.216', 'port':11115, 'mac':'44:AF:28:F2:EB:3A'},
-            {'ip': '192.168.60.216', 'port':11116, 'mac':'44:AF:28:F2:EB:3A'}
-        ]
-        # self.clientMultiSocket = socket.socket()
-        # self.clientMultiSocket.bind(('0.0.0.0', 0))
-        # self.clientMultiSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        # localPort = self.clientMultiSocket.getsockname()[1] 
-        # self.printer = Printer()
-        # self.printer.write(name='Discovery', msg=f"Bound to local port: {localPort}")
+        # self.peersList = [
+        #     {'ip': '192.168.60.216', 'port':11111, 'mac':'44:AF:28:F2:EB:3A'},
+        #     {'ip': '192.168.60.216', 'port':11112, 'mac':'44:AF:28:F2:EB:3A'},
+        #     {'ip': '192.168.60.216', 'port':11113, 'mac':'44:AF:28:F2:EB:3A'},
+        #     {'ip': '192.168.60.216', 'port':11114, 'mac':'44:AF:28:F2:EB:3A'},
+        #     {'ip': '192.168.60.216', 'port':11115, 'mac':'44:AF:28:F2:EB:3A'},
+        #     {'ip': '192.168.60.216', 'port':11116, 'mac':'44:AF:28:F2:EB:3A'}
+        # ]
+        self.clientMultiSocket = socket.socket()
+        self.clientMultiSocket.bind(('0.0.0.0', 0))
+        self.clientMultiSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        localPort = self.clientMultiSocket.getsockname()[1] 
+        self.printer = Printer()
+        self.printer.write(name='Discovery', msg=f"Bound to local port: {localPort}")
 
-        # print('Discovery: Waiting for connection response')
-        # self.printer.write(name='Discovery', msg=f"Sending connection request to Discovery Server at {self.server_port}:{self.server_port}")
-        # try:
-        #     self.clientMultiSocket.connect((self.server_ip, self.server_port))
-        # except socket.error as e:
-        #     print(str(e))
-        #     return
-        # res = self.clientMultiSocket.recv(1024)
+        print('Discovery: Waiting for connection response')
+        self.printer.write(name='Discovery', msg=f"Sending connection request to Discovery Server at {self.server_port}:{self.server_port}")
+        try:
+            self.clientMultiSocket.connect((self.server_ip, self.server_port))
+        except socket.error as e:
+            print(str(e))
+            return
+        res = self.clientMultiSocket.recv(1024)
 
-        # d_data = {'ip': self.IPAddr , 'port':localPort, 'mac':self.mac_add}
-        # self.printer.write(name='Discovery', msg=f"Sending location info to Discovery Server: {d_data}")
-        # data = json.dumps(d_data)
-        # self.clientMultiSocket.sendall(bytes(data,encoding="utf-8"))
+        d_data = {'ip': self.IPAddr , 'port':localPort, 'mac':self.mac_add}
+        self.printer.write(name='Discovery', msg=f"Sending location info to Discovery Server: {d_data}")
+        data = json.dumps(d_data)
+        self.clientMultiSocket.sendall(bytes(data,encoding="utf-8"))
         
     def retrieve_peers(self):
-        return
+        # return
         # TODO: uncomment this and change the decoding to JSON instead
         self.clientMultiSocket.sendall(str.encode('1'))
         res = self.clientMultiSocket.recv(1024)
@@ -87,7 +87,7 @@ class DiscoveryServiceInterface(metaclass=SingletonMeta):
         self.printer.write(name='Discovery', msg=f"Retrieving peers: {self.peersList}")
 
     def retreive_known_peers(self, mac_addr_list: list):
-        return
+        # return
         json_data = json.dumps(mac_addr_list)
         self.clientMultiSocket.sendall(str.encode(json_data))
         res = self.clientMultiSocket.recv(1024)
