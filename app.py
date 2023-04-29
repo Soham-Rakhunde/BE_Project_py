@@ -55,8 +55,8 @@ with gr.Blocks(css='ui/main.css') as demo:
                                    password, confirmPassword], outputs=btn)
 
             def password_generate(passwd):
-                keyHandler.generate(password=passwd)
-                keyHandler.save()
+                keyHandler.generateKey(password=passwd)
+                # keyHandler.save()
 
                 return [passwordBox.update(visible=False), homeBox.update(visible=True)]
 

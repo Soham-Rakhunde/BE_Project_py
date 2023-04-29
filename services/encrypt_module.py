@@ -1,7 +1,5 @@
-import binascii
 from Crypto.Cipher import AES
 from services.data_handler_module import DataHandler
-# from Crypto.Random import get_random_bytes
 from services.key_handling_module import KeyHandler
 from ui.printer import Printer
 

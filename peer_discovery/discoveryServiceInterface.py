@@ -28,7 +28,7 @@ from utils.singleton_meta import SingletonMeta
 #         return cls._instances[cls]
 
 class DiscoveryServiceInterface(metaclass=SingletonMeta):
-    server_ip = '127.0.0.1'
+    server_ip = '192.168.213.172'
     server_port = 11100
     mac_add =  (':'.join(re.findall('..', '%012x' % uuid.getnode())))
     try:

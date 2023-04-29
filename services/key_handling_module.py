@@ -65,6 +65,18 @@ class KeyHandlerUI(metaclass=SingletonMeta):
     # path = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop') + '\\' + file_name
     path = 'Identity/salt.bin'
 
+    @staticmethod
+    def is_password_created():
+        return os.path.exists('Identity/salt.bin')
+
+    def __init__(self):
+        if not os.path.isdir('Identity'):
+            os.mkdir('Identity')
+
+        if os.path.exists(self.path):
+            self.retrieve()
+        else:
+            self.generateSalt()
     
     def is_password_created(self):
         if not os.path.isdir('Identity'):
@@ -72,15 +84,13 @@ class KeyHandlerUI(metaclass=SingletonMeta):
         print( os.path.exists(self.path))
         return os.path.exists(self.path)
 
-    def generate(self, password: str):
+    def generateSalt(self):
         self.salt = get_random_bytes(self.SALT_SIZE)
-        self.key = pyargon2.hash(password, str(b64encode(self.salt)), hash_len=self.KEY_SIZE, encoding='raw')
-        
-    def save(self):
-        if not os.path.isdir('Identity'):
-            os.mkdir('Identity')    
         with open(self.path, 'wb') as file:
             file.write(self.salt)
+    
+    def generateKey(self, password: str):
+        self.key = pyargon2.hash(password, str(b64encode(self.salt)), hash_len=self.KEY_SIZE, encoding='raw')
 
     def retrieve(self, password:str):
         with open(self.path, 'rb') as file:
