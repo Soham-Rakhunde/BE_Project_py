@@ -126,7 +126,7 @@ class StegDecoder:
         self.encoded_image : Image = open_image(encoded_image)
         self._buff, self._count = BitArray(), 0
         self.semib = ""
-        self.secret_message = None
+        self.secret_message : bytes = None
         self._MSG_LENGTH = 0
         self._length_find_flag = True
 
@@ -163,7 +163,7 @@ class StegDecoder:
         # encoded_image: Union[str, IO[bytes]],
         generator: Union[None, Iterator[int]] = None,
         shift: int = 0,
-    ):
+    ) -> bytes:
         # revealer = StegDecoder(encoded_image)
         width = self.encoded_image.width
 

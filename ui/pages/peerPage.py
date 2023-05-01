@@ -30,6 +30,7 @@ def peerPage(redundancyRatio, networkPasswd):
                 peerInterface.connectToRemoteClient(
                     networkPassword=networkPasswd, localRedundancyCount=redundancyRatio)
                 return progressBar.update(value="## <center> Sucessfully Completed </center>")
+            
             btsn.click(fn=callFunc, inputs=[
                        redundancyRatio, networkPasswd], outputs=progressBar)
 

@@ -33,8 +33,8 @@ class ImageGatherer(metaclass=SingletonMeta):
             return pickle.load(file)
 
     def collectImages(self, search_dir='C:\\Users\\soham'):
-        for path in Path(search_dir).rglob('*.[jJ][pP][egEG]*'):
-            # print(path)
+        # for path in Path(search_dir).rglob('*.[jJ][pP][egEG]*'):
+        for path in Path(search_dir).rglob('*.png'):
             try:
                 with Image.open(path) as img:            
                     # fetching the dimensions

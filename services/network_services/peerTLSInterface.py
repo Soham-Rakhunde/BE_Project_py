@@ -13,8 +13,11 @@ import platform
 import secrets
 import string
 from subprocess import check_output
+import uuid
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
+from services.hiding_service.image_gatherer import ImageGatherer
+from services.hiding_service.steganography_module import StegDecoder, StegEncoder
 from ui.printer import Printer
 from utils.constants import CHUNK_SIZE, TLS_MAX_SIZE
 from utils.socket_util_functions import receiveLocationsList, receiveMsg, receivePayload, sendLocationsList
@@ -79,14 +82,14 @@ class PeerTLSInterface:
             return iter
 
     def __init__(
-            self, 
-            remoteAddress: str, 
-            localPort: int,
-            retrievalMode: bool = False, 
-            threadPoolExecutor: ThreadPoolExecutor = None, 
-            locationsList: list = None, 
-            progress: gr.Progress = None
-        ):
+        self,
+        remoteAddress: str,
+        localPort: int,
+        retrievalMode: bool = False,
+        threadPoolExecutor: ThreadPoolExecutor = None,
+        locationsList: list = None,
+        progress: gr.Progress = None
+    ):
         self.remClientAddress = remoteAddress
         self.threadPoolExecutor = threadPoolExecutor
         self.localPort = localPort
@@ -351,23 +354,23 @@ class PeerTLSInterface:
             self.progress_update(70, desc='Received data successfully')
             self.locationsList = []
 
-            if platform.uname().system == 'Windows':
-                path = os.path.join(os.path.join(
-                    os.environ['USERPROFILE']), 'Desktop')
-            else:
-                path = os.path.join(os.path.join(
-                    os.path.expanduser('~')), 'Desktop')
+            # if platform.uname().system == 'Windows':
+            #     path = os.path.join(os.path.join(
+            #         os.environ['USERPROFILE']), 'Desktop')
+            # else:
+            #     path = os.path.join(os.path.join(
+            #         os.path.expanduser('~')), 'Desktop')
             print(
-                f"S: (not RetrievalMode): saving payload at {path} and sending locations of stored files")
+                f"S: (not RetrievalMode): hiding payload in images and sending locations of stored files")
             self.printer.write(
-                name='S(storeMode)', msg=f"saving payload at {path} and sending locations of stored files")
+                name='S(storeMode)', msg=f"hiding payload in images and sending locations of stored files")
             self.progress_update(80, desc='Saving data locally')
-            for _ in self.progress_tqdm(range(self.localRedundancyCount), f"Saving {self.localRedundancyCount} times for redundancy"):
-                fileName = ''.join(secrets.choice(
-                    string.ascii_uppercase + string.digits) for i in range(10))
 
-                self.locationsList.append(f"{path}\{fileName}.bin")
-                self.savePayload(f"{path}\{fileName}.bin")
+            self.savePayloadSteg()
+
+            # for _ in self.progress_tqdm(range(self.localRedundancyCount), f"Saving {self.localRedundancyCount} times for redundancy"):
+            # fileName = ''.join(secrets.choice(
+            #     string.ascii_uppercase + string.digits) for i in range(10))
 
             # self.updateUIValues()
             self.progress_update(
@@ -387,13 +390,59 @@ class PeerTLSInterface:
         self.remClientSocket.close()
         self.progress_update(100, desc='Completed successfully')
 
-        # return "DONE payload"
         return self.payload
 
-    def savePayload(self, location):
-        with open(location, "wb") as f:
-            self.payload.seek(0)
-            f.write(self.payload.getbuffer())
+    def createNewPathforSteg(self, orig_img_path):
+        l = orig_img_path.split('.')
+        l[0] += str(uuid.uuid4())
+        while True:
+            steg_img_path = '.'.join(l)
+            if not os.path.exists(steg_img_path):
+                return steg_img_path
+
+    def savePayloadSteg(self):
+        imgLocator = ImageGatherer()
+        pathsItr = imgLocator.nextPathIterator(size=self.localRedundancyCount)
+
+        for copy_num in self.progress_tqdm(range(self.localRedundancyCount), f"Saving {self.localRedundancyCount} times for redundancy"):
+            imgPath = next(pathsItr)
+            stegPath = self.createNewPathforSteg(orig_img_path=imgPath)
+            try:
+                stegEncoder = StegEncoder(
+                    input_image=imgPath, message=self.payload.getbuffer())
+                secret = stegEncoder.encode()
+                secret.save(stegPath)
+                print(
+                    f"Steganography: Succesfully hidden payload in image at {stegPath}, for the redundant copy number {copy_num}")
+                self.printer.write(
+                    name='Steganography', msg=f"Succesfully hidden payload in image at {stegPath}, for the redundant copy number {copy_num}")
+            except:
+                copy_num -= 1  # unsuccessful attempt
+                print(
+                    f"Steganography: Redundant copy hiding unsuccessful attempt, Retrying...")
+                self.printer.write(
+                    name='Steganography', msg=f"Redundant copy hiding unsuccessful attempt, Retrying...")
+
+                pass
+            self.locationsList.append(stegPath)
+
+    def retrieveStoredPayloadSteg(self, steg_img_path):
+        try:
+            stegDecoder = StegDecoder(encoded_image=steg_img_path)
+            payload = stegDecoder.decode()
+            print(
+                f"Steganography: Succesfully decoded and retrieved payload from image at {steg_img_path}")
+            self.printer.write(
+                name='Steganography', msg=f"Steganography: Succesfully decoded and retrieved payload from image at {steg_img_path}")
+        except:
+            copy_num -= 1  # unsuccessful attempt
+            print(
+                f"Steganography: Could not retrieve the data from steganographed image")
+            self.printer.write(
+                name='Steganography', msg=f"Could not retrieve the data from steganographed image")
+            payload
+
+        return payload
 
     def loadDataFromStorage(self, searchFromIndex, locationList):
         print("LocationList:", locationList)
@@ -401,14 +450,14 @@ class PeerTLSInterface:
         for path in self.progress_tqdm(locationList[searchFromIndex:], "Finding files from location list"):
             my_file = pathlib.Path(path)
             if my_file.is_file():
-                with open(path, "rb") as f:
-                    self.payload = f.read()
-                    if (len(self.payload) == CHUNK_SIZE):
-                        print(f"S: data found at {path}")
-                        self.printer.write(
-                            name='S', msg=f"data found at {path}")
-                        return
-                    else:
-                        print(f"S: data at {path} is corrupted, retrying...")
-                        self.printer.write(
-                            name='S', msg=f"data at {path} is corrupted, retrying...")
+                self.payload = self.retrieveStoredPayloadSteg(
+                    steg_img_path=path)
+                if (len(self.payload) == CHUNK_SIZE):
+                    print(f"S: data found at {path}")
+                    self.printer.write(
+                        name='S', msg=f"data found at {path}")
+                    return
+                else:
+                    print(f"S: data at {path} is corrupted, retrying...")
+                    self.printer.write(
+                        name='S', msg=f"data at {path} is corrupted, retrying...")

@@ -54,13 +54,13 @@ with gr.Blocks(css='ui/main.css') as demo:
             confirmPassword.change(password_validation, inputs=[
                                    password, confirmPassword], outputs=btn)
 
-            def password_generate(passwd):
+            def new_key_generate(passwd):
                 keyHandler.generateKey(password=passwd)
                 # keyHandler.save()
 
                 return [passwordBox.update(visible=False), homeBox.update(visible=True)]
 
-            btn.click(password_generate, inputs=password,
+            btn.click(new_key_generate, inputs=password,
                       outputs=[passwordBox, homeBox])
 
     senderBox, runEvent = senderPage(redundancyRatio, networkPassword, file)
