@@ -1,10 +1,11 @@
 import os
 import pickle
+from threading import Thread
 from typing import Iterator
 
 from pathlib import Path
 from PIL import Image
-from services.key_handling_module import KeyHandlerUI
+# from services.key_handling_module import KeyHandlerUI
 from utils.constants import CHUNK_SIZE
 from utils.singleton_meta import SingletonMeta
 
@@ -21,7 +22,9 @@ class ImageGatherer(metaclass=SingletonMeta):
 
         if os.path.exists(self.path):
             self.usedImages = self.getUsedList()
-            
+        homePath = str(Path.home())
+        thread = Thread(target = self.collectImages, args=(homePath, ))
+        thread.start()
         # self.salt = KeyHandlerUI().salt
 
     def updateUsedList(self):
