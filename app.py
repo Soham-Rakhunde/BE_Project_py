@@ -1,96 +1,45 @@
-import time
 import gradio as gr
 from peer_discovery.discoveryServiceInterface import DiscoveryServiceInterface
-from services.network_services.peerTLSInterface import PeerTLSInterface
-
-from ui.printer import Printer
 from services.key_handling_module import KeyHandlerUI
 
+from ui.dataAccumlator import DataLogger
+from ui.printer import Printer
+
+from ui.pages.homePage import homePage
+from ui.pages.peerPage import peerPage
+from ui.pages.retreiverPage import retrievalPage
+from ui.pages.senderPage import senderPage
 
 
-
-pr = Printer()
-visibleBox = None
-invisibleBox = None
-
-
-
-
-
-def wer_help():
-    p = Printer()
-    for i in range(15):
-        p.write2(name=f"{i%4 +1}", msg=str(i))
-        time.sleep(0.4)
-
-
-def terminalUI():
-    gr.HTML(value=pr.getHTML, label="Terminal", every = 1)
-    btsn = gr.Button("Run")
+with gr.Blocks(css='ui/main.css') as demo:
     DiscoveryServiceInterface()
-    ob = PeerTLSInterface(remoteAddress = '192.168.0.103', localPort= 11111)
-    # fut = executor.submit(ob.connectToRemoteClient,keypasswd='G00dP@ssw0rd', hostpassword ='P@ssw0rd',remotepassword ='P@ssw0rd')
-    def callFunc():
-        ob.connectToRemoteClient(keypasswd='G00dP@ssw0rd', hostpassword ='P@ssw0rd',remotepassword ='P@ssw0rd')
-    btsn.click(fn=callFunc)
+    with gr.Row():
+        with gr.Column(scale=6,):
+            gr.Markdown("# Secure data storage and hiding (Group 74)")
+        backBtn = gr.Button("Back", visible=False)
 
-def upload_file(files):
-    file_paths = [file.name for file in files]
-    print(file_paths)
-    print(files.name)
-    return files.name
-
-def homePage():
-    with gr.Box(visible= True) as box:
-        with gr.Row():
-            with gr.Column(scale=8):
-                file_output = gr.File()
-                uploadButton = gr.UploadButton(value="Browse Files to Send or Tracker file to retrieve")
-                uploadButton.upload(upload_file, uploadButton, file_output)
-            with gr.Column(scale=6, variant='panel'):
-                gr.Markdown('## <center>Menu Options</center>')
-                sendBtn = gr.Button(value="Send", elem_id='homeBtn1')
-                retrBtn = gr.Button(value="Retrieve", elem_id='homeBtn2')
-                recvBtn = gr.Button(value="Receiver Mode", elem_id='homeBtn3')
-            
-    return box
-
-
-def receiverBox():
-    with gr.Box() as tabBox:
-        gr.Markdown("""
-            ### <center> Receiver Mode </center>
-
-            Peer-IP: 192.168.30.102 \n
-            Chunks: 4 \n
-            Received: 2 MB
-
-        """)
-    
-    return tabBox
-
-
-
-
-def passwordPage():
+    homeBox, radio, redundancyRatio, startBtn, file, jsonFile, networkPassword = homePage()
     keyHandler = KeyHandlerUI()
 
-    # tabBox = mainTabs()
     with gr.Box() as passwordBox:
         if keyHandler.is_password_created():
-            password = gr.Textbox(label="Keystore Passphrase", placeholder='Enter keystore Passphrase')
+            password = gr.Textbox(
+                label="Keystore Passphrase", placeholder='Enter keystore Passphrase')
             btn = gr.Button(value="Submit")
             btn.style(full_width=False)
 
             def retrieve_key(passwd):
                 keyHandler.retrieve(password=passwd)
-                return [btn.update(visible=False), password.update(visible=False)]
+                return [passwordBox.update(visible=False), homeBox.update(visible=True)]
 
-            btn.click(retrieve_key, inputs=password, outputs=[passwordBox])
+            btn.click(retrieve_key, inputs=password,
+                      outputs=[passwordBox, homeBox])
         else:
             with gr.Row():
-                password = gr.Textbox(label="Keystore Passphrase", placeholder='Enter new Passphrase')
-                confirmPassword = gr.Textbox(label="Confirm Passphrase", placeholder='Confirm the Passphrase', type='password')
+                password = gr.Textbox(
+                    label="Keystore Passphrase", placeholder='Enter new Passphrase')
+                confirmPassword = gr.Textbox(
+                    label="Confirm Passphrase", placeholder='Confirm the Passphrase', type='password')
             btn = gr.Button(value="Confirm", visible=False)
             btn.style(full_width=False)
 
@@ -99,50 +48,50 @@ def passwordPage():
                     return btn.update(visible=True)
                 else:
                     return btn.update(visible=False)
-                
-            password.change(password_validation, inputs=[password, confirmPassword], outputs=btn)
-            confirmPassword.change(password_validation, inputs=[password, confirmPassword], outputs=btn)
 
-            def password_generate(passwd):
-                keyHandler.generate(password=passwd)
-                keyHandler.save()
+            password.change(password_validation, inputs=[
+                            password, confirmPassword], outputs=btn)
+            confirmPassword.change(password_validation, inputs=[
+                                   password, confirmPassword], outputs=btn)
 
+            def new_key_generate(passwd):
+                keyHandler.generateKey(password=passwd)
+                # keyHandler.save()
 
-                return [password.update(visible=False), confirmPassword.update(visible=False), btn.update(visible=False)]
+                return [passwordBox.update(visible=False), homeBox.update(visible=True)]
 
-            btn.click(password_generate, inputs= password, outputs=[password, confirmPassword, btn])
+            btn.click(new_key_generate, inputs=password,
+                      outputs=[passwordBox, homeBox])
 
-        
+    senderBox, runEvent = senderPage(redundancyRatio, networkPassword, file)
+    retrievalBox, runEvent2 = retrievalPage(networkPassword, jsonFile)
+    receiverBox = peerPage(redundancyRatio, networkPassword)
 
+    def openPage(radio, jsonFile):
+        if radio == 0:
+            return [homeBox.update(visible=False), senderBox.update(visible=True), retrievalBox.update(visible=False), receiverBox.update(visible=False), backBtn.update(visible=True)]
+        elif radio == 1:
+            if jsonFile is not None and jsonFile.orig_name.lower().endswith(('.json')):
+                return [homeBox.update(visible=False), senderBox.update(visible=False), retrievalBox.update(visible=True), receiverBox.update(visible=False), backBtn.update(visible=True)]
+            else:
+                return [homeBox, senderBox, retrievalBox, receiverBox, backBtn]
+        elif radio == 2:
+            return [homeBox.update(visible=False), senderBox.update(visible=False), retrievalBox.update(visible=False), receiverBox.update(visible=True), backBtn.update(visible=True)]
 
-# def main_tabs():
-#     with gr.Box(visible= False):
+    startBtn.click(openPage, inputs=[radio, jsonFile], outputs=[
+                   homeBox, senderBox, retrievalBox, receiverBox, backBtn])
 
+    def backBtnHandler():
+        printer = Printer()
+        printer.flush()
+        hostLogs = DataLogger()
+        hostLogs.flush()
+        return [homeBox.update(visible=True), senderBox.update(visible=False), retrievalBox.update(visible=False), receiverBox.update(visible=False), backBtn.update(visible=False)]
 
-def backBtnHandler():
-    if visibleBox != None and invisibleBox != None:
-        visibleBox, invisibleBox = invisibleBox, visibleBox
-        return [visibleBox.update(visible=True), invisibleBox.update(visible=False)]
-    else:
-        return [visibleBox, invisibleBox]
-
-with gr.Blocks(css='ui/main.css') as demo:
-    # discovery = DiscoveryServiceInterface()
-    with gr.Row():
-        with gr.Column(scale=6,): 
-            gr.Markdown("# Secure data storage and hiding")
-        backBtn = gr.Button("Back")
-        # backBtn.click(backBtnHandler, outputs= [visibleBox, invisibleBox])
-    # passwordPage()
-    receiverBox()
-    # homePage()
-    terminalUI()
-
-# demo.queue()
-
+    backBtn.click(backBtnHandler, outputs=[
+                  homeBox, senderBox, retrievalBox, receiverBox, backBtn], cancels=[runEvent, runEvent2])
 
 demo.queue()
-
 
 if __name__ == '__main__':
     demo.launch()

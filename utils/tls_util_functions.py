@@ -3,7 +3,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import serialization
-import os, getpass, sys, random, datetime, getpass
+import os, random, datetime
 
 #Self-signed certificate creation
 from cryptography import x509
@@ -12,6 +12,8 @@ from cryptography.x509.oid import NameOID
 #Symmetric key generation
 from cryptography.hazmat.primitives.serialization import load_pem_public_key, load_pem_private_key
 from cryptography.hazmat.primitives.asymmetric import padding
+
+from services.key_handling_module import KeyHandlerUI
 hashingAlgorithm = hashes.SHA512()
 passwd_hashingAlgorithm = hashes.SHA256()
 passwd_attempts = 4
@@ -26,6 +28,7 @@ def makeKey():
         backend=default_backend()
     )
     public_key = private_key.public_key()
+    writeKey(private_key)
     return {'private':private_key,'public':public_key}
 
 
@@ -71,8 +74,9 @@ def readPub(pubString):
     return public_key
 
 #Writing encrypted private key to file (for use with the certificate)
-def writeKey(priv,passwd):
-    # TODO: Ask for password everytime 
+def writeKey(priv):
+    keyHandler = KeyHandlerUI()
+    passwd = keyHandler.key
     priv = priv.private_bytes(
         encoding=serialization.Encoding.PEM,
         format=serialization.PrivateFormat.TraditionalOpenSSL,
@@ -81,11 +85,13 @@ def writeKey(priv,passwd):
     with open('Identity/private_key.pem', 'wb') as f:
         f.write(priv)
 
-def retrieveKey(passwd):
+def retrieveKey():
+    keyHandler = KeyHandlerUI() 
+    passwd = keyHandler.key
     with open("Identity/private_key.pem", "rb") as key_file:
         private_key = serialization.load_pem_private_key(
             data=key_file.read(),
-            password=bytes(passwd, encoding='utf-8'),
+            password=passwd, #bytes(passwd, encoding='utf-8'),
             backend=default_backend()
         )
         public_key = private_key.public_key()
@@ -94,37 +100,12 @@ def retrieveKey(passwd):
     return private_key
 
 
-def passwordPromptNG():
-        while True:
-            print("A: Certificate has not yet been generated. Please enter a secure password to use as the unlock key:")
-            return bytes('G00dP@ssw0rd', 'utf8')
-            while True:
-                p1 = getpass.getpass("A: Password: ").strip()
-                p2 = getpass.getpass("A: Confirm: ").strip()
-                if (p1 == p2) and (len(p1) > 0):
-                    return bytes(p1,'utf8')
-                else:
-                    print("A: Passwords don't match. Please try again")
-
 #Generating a self-signed certificate with an existing private key
 def makeCert():
     if not os.path.isfile('Identity/certificate.pem'):
         #Generate private key
         key = makeKey()['private']
-        
-        #Get password input from user for private key
-        password = ''
-        while True:
-            passInp = passwordPromptNG()
 
-            pass
-
-            if passInp is None:
-                exit()
-            if not passInp == b'':
-                password = passInp
-                break
-        
         #Generate ranom alias
         aliasID = f"{random.randint(1,10000000)}".zfill(8)
         alias = f"Anon{aliasID}"
@@ -156,7 +137,7 @@ def makeCert():
             fp.write(cert.public_bytes(serialization.Encoding.PEM))
 
         #Write private key to file
-        writeKey(key,password)
+        # writeKey(key)
 
 
 def verifyCert(remPubKey, remCert):

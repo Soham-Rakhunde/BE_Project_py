@@ -78,7 +78,7 @@ def multi_threaded_client(connection,address):
             port_number[mac_data].remove(port_data)
         all_data.remove(uni_data_)
         connection.close()
-        print('Connection closed: '+address[0] + ':' + str(address[1]))
+        print('Connection closed: '+ip_data + ':' + str(port_data))
 
 while True:
     Client, address = ServerSideSocket.accept()
