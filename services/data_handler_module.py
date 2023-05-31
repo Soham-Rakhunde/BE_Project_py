@@ -23,7 +23,7 @@ class DataHandler:
 
 
 
-    '''pads the data for 512KB Chunk and stores in format:
+    '''pads the data for 32KB Chunk and stores in format:
         -> First 3 bytes for size of the pad
         -> then the pad (if any) 
         -> then the cipher 

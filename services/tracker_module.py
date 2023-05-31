@@ -67,8 +67,8 @@ class Tracker:
         self.printer.write(
             name='Tracker', msg='Excecption: Too high redundancy ratio')
 
-        # if not self.is_compatible_reduncancy_ratio():
-        #     return
+        if not self.is_compatible_reduncancy_ratio():
+            return
 
         futuresDict = dict()
         with concurrent.futures.ThreadPoolExecutor() as executor:
@@ -99,7 +99,8 @@ class Tracker:
                         threadPoolExecutor = executor, 
                         remoteAddress = self.peersList[peer_number]['ip'], 
                         # remotePort = self.peersList[peer_number]['ip'] TODO
-                        remotePort = 11111 + peer_number,
+                        # remotePort = 11111 + peer_number,
+                        remotePort = 11111,
                         chunkId=chunk_id,
                         peerId=peer_number
                     )

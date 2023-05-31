@@ -130,7 +130,8 @@ class RetrieverModule:
                 receiver = HostTLSInterface(
                     threadPoolExecutor = executor, 
                     remoteAddress = curChunk['address'], 
-                    remotePort= 11111+self.portadd,
+                    remotePort= 11111,
+                    # remotePort= 11111+self.portadd,
                     retrievalMode= True,
                     locationsList=curChunk['locations'],
                     hmac=curChunk['hmac']
