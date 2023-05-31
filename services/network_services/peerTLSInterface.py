@@ -393,8 +393,9 @@ class PeerTLSInterface:
         return self.payload
 
     def createNewPathforSteg(self, orig_img_path):
+        orig_img_path = str(orig_img_path)
         l = orig_img_path.split('.')
-        l[0] += str(uuid.uuid4())
+        l[-2] += str(uuid.uuid4())
         while True:
             steg_img_path = '.'.join(l)
             if not os.path.exists(steg_img_path):

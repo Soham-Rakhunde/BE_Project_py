@@ -111,6 +111,7 @@ class HostTLSInterface:
             print(
                 f"C: Attempting connection to remServerAddress:{self.remServerAddress} remotePort {self.remotePort}...")
             try:
+                self.remServerAddress = self.remServerAddress.split(' ')[0]
                 clientSocketI = socket.create_connection(
                     (self.remServerAddress, self.remotePort))
                 break

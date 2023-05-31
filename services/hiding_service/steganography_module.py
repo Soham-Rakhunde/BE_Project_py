@@ -151,7 +151,7 @@ class StegDecoder:
                 if self._count == 3*8: # 3 bytes for the message length
                     msg_len_bin = self._buff.bytes
                     self._MSG_LENGTH = int.from_bytes(msg_len_bin, byteorder ='big')
-                    print("Message length", self._MSG_LENGTH, self._buff)
+                    # print("Message length", self._MSG_LENGTH, self._buff)
                     self._buff = BitArray()
                     self._length_find_flag = False
                     self._count = 0
@@ -182,5 +182,3 @@ class StegDecoder:
 
             if self.decode_pixel((col, row)):
                 return self.secret_message
-    
-

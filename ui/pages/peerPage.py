@@ -1,10 +1,12 @@
 import gradio as gr
+from services.hiding_service.image_gatherer import ImageGatherer
 
 from services.network_services.peerTLSInterface import PeerTLSInterface
 from ui.terminalUI import terminalUI
 
 def peerPage(redundancyRatio, networkPasswd):
     peerInterface = None
+    ImageGatherer()
     with gr.Box(visible=False) as receiverBox:
         with gr.Column():
             gr.Markdown("### <center> Peer Mode </center>")

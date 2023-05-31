@@ -28,7 +28,7 @@ from utils.singleton_meta import SingletonMeta
 #         return cls._instances[cls]
 
 class DiscoveryServiceInterface(metaclass=SingletonMeta):
-    server_ip = '192.168.213.172'
+    server_ip = '192.168.96.50'
     server_port = 11100
     mac_add =  (':'.join(re.findall('..', '%012x' % uuid.getnode())))
     try:
@@ -43,20 +43,12 @@ class DiscoveryServiceInterface(metaclass=SingletonMeta):
         hostname = socket.gethostname()
         IPAddr = socket.gethostbyname_ex(hostname)[-1][-1]
     else: 
-        IPAddr = str(check_output(['hostname', '--all-ip-addresses']))[2:-4]
+        IPAddr = str(check_output(['hostname', '--all-ip-addresses'])).split(' ')[0][2:]
     print(IPAddr)
 
     
 
     def __init__(self):
-        # self.peersList = [
-        #     {'ip': '192.168.60.216', 'port':11111, 'mac':'44:AF:28:F2:EB:3A'},
-        #     {'ip': '192.168.60.216', 'port':11112, 'mac':'44:AF:28:F2:EB:3A'},
-        #     {'ip': '192.168.60.216', 'port':11113, 'mac':'44:AF:28:F2:EB:3A'},
-        #     {'ip': '192.168.60.216', 'port':11114, 'mac':'44:AF:28:F2:EB:3A'},
-        #     {'ip': '192.168.60.216', 'port':11115, 'mac':'44:AF:28:F2:EB:3A'},
-        #     {'ip': '192.168.60.216', 'port':11116, 'mac':'44:AF:28:F2:EB:3A'}
-        # ]
         self.clientMultiSocket = socket.socket()
         self.clientMultiSocket.bind(('0.0.0.0', 0))
         self.clientMultiSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -79,20 +71,29 @@ class DiscoveryServiceInterface(metaclass=SingletonMeta):
         self.clientMultiSocket.sendall(bytes(data,encoding="utf-8"))
         
     def retrieve_peers(self):
-        # return
-        # TODO: uncomment this and change the decoding to JSON instead
         self.clientMultiSocket.sendall(str.encode('1'))
         res = self.clientMultiSocket.recv(1024)
         self.peersList = json.loads(res)
+
+        # self.peersList.remove('192.168.96.50')
+        for i in range(len(self.peersList)):
+            if self.peersList[i]['ip'] == self.IPAddr:
+                del self.peersList[i]
+                break
+
         print("Discovery: available peers: ", self.peersList)
         self.printer.write(name='Discovery', msg=f"Retrieving peers: {self.peersList}")
 
     def retreive_known_peers(self, mac_addr_list: list):
-        # return
         json_data = json.dumps(mac_addr_list)
         self.clientMultiSocket.sendall(str.encode(json_data))
         res = self.clientMultiSocket.recv(1024)
         self.peersList = json.loads(res)
+        
+        for i in range(len(self.peersList)):
+            if self.peersList[i]['ip'] == self.IPAddr:
+                del self.peersList[i]
+                break
         print("Discovery: available peers: ", self.peersList)
         self.printer.write(name='Discovery', msg=f"Retrieving known peers: {self.peersList}")
         
